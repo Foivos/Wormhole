@@ -1,9 +1,9 @@
 package com.foivos.wormhole.transport;
 
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
+import java.util.Random;
 
+import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -11,34 +11,31 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.network.INetworkManager;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.Packet132TileEntityData;
-import net.minecraft.network.packet.Packet250CustomPayload;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.common.ForgeDirection;
 import net.minecraftforge.common.ISidedInventory;
 
 import com.foivos.wormhole.Wormhole;
 
-import cpw.mods.fml.common.network.PacketDispatcher;
-
 public class TileWormholeManipulator extends TileEntity implements ISidedInventory {
-
+	
+	public final static int SIZE = 21;
 	private ItemStack[][] inv = new ItemStack[6][];
-	public byte selected = 0;
 	
 	public TileWormholeManipulator() {
 		for(int i=0; i<6; i++) {
-			inv[i] = new ItemStack[21];
+			inv[i] = new ItemStack[SIZE];
 		}
 	}
 	
 	@Override
 	public int getSizeInventory() {
-		return inv[selected].length;
+		return SIZE*6;
 	}
 
 	@Override
 	public ItemStack getStackInSlot(int index) {
-		return inv[selected][index];
+		return inv[index/21][index%21];
 	}
 
 	@Override
@@ -69,17 +66,17 @@ public class TileWormholeManipulator extends TileEntity implements ISidedInvento
 	@Override
 	public void setInventorySlotContents(int index, ItemStack stack) {
 		if(stack == null) {
-			inv[selected][index] = null;
+			inv[index/SIZE][index%SIZE] = null;
 			return;
 		}
 		if(index == 0) {
 			if(stack.itemID != Wormhole.inventoryInterractor.itemID)
 				return;
 			stack.stackSize = 1;
-			inv[selected][index] = stack;
+			inv[index/SIZE][index%SIZE] = stack;
 			return;
 		}
-		inv[selected][index] = stack;
+		inv[index/21][index%21] = stack;
 	}
 
 	@Override
@@ -139,41 +136,6 @@ public class TileWormholeManipulator extends TileEntity implements ISidedInvento
 		return true;
 	}
 
-	public void setSelected(byte selected) {
-		if(this.selected == selected)
-			return;
-		this.selected = selected;
-		updateSelected();
-	}
-	
-	public void updateSelected() {
-		if(worldObj.isRemote) {
-			ByteArrayOutputStream bos = new ByteArrayOutputStream(8);
-	        DataOutputStream outputStream = new DataOutputStream(bos);
-	        try
-	        {
-	            outputStream.writeInt(worldObj.provider.dimensionId);
-	            outputStream.writeInt(xCoord);
-	            outputStream.writeInt(yCoord);
-	            outputStream.writeInt(zCoord);
-	            outputStream.writeByte(selected);
-	        }
-	        catch (Exception ex)
-	        {
-	            ex.printStackTrace();
-	        }
-	 
-	        Packet250CustomPayload packet = new Packet250CustomPayload();
-	        packet.channel = "WHmanipulator";
-	        packet.data = bos.toByteArray();
-	        packet.length = bos.size();
-	        
-	        PacketDispatcher.sendPacketToServer(packet);
-		}
-		else {	
-			worldObj.markBlockForUpdate(xCoord, yCoord, zCoord);
-		}
-	}
 	
 	@Override
 	public Packet getDescriptionPacket ()
@@ -193,13 +155,11 @@ public class TileWormholeManipulator extends TileEntity implements ISidedInvento
     public void readFromNBT(NBTTagCompound tagCompound) {
             super.readFromNBT(tagCompound);
             
-            selected = tagCompound.getByte("selected");
-            
             NBTTagList tagList = tagCompound.getTagList("Inventory");
             for (int i = 0; i < tagList.tagCount(); i++) {
                     NBTTagCompound tag = (NBTTagCompound) tagList.tagAt(i);
                     byte b = tag.getByte("Slot");
-                    inv[b/21][b%21] = ItemStack.loadItemStackFromNBT(tag);
+                    inv[b/SIZE][b%SIZE] = ItemStack.loadItemStackFromNBT(tag);
             }
     }
 
@@ -207,24 +167,58 @@ public class TileWormholeManipulator extends TileEntity implements ISidedInvento
     public void writeToNBT(NBTTagCompound tagCompound) {
             super.writeToNBT(tagCompound);
             
-            tagCompound.setByte("selected", selected);
             NBTTagList itemList = new NBTTagList();
             
             
-            for (int i=0;i<6;i++) {
-            	ItemStack[] stacks = inv[i];
-            	for(int j=0;j<stacks.length;j++) {
-            		ItemStack stack = stacks[j];
-            		if (stack != null) {
-                        NBTTagCompound tag = new NBTTagCompound();
-                        tag.setByte("Slot", (byte) (i*21+j));
-                        stack.writeToNBT(tag);
-                        itemList.appendTag(tag);
-            		}
-            	}
+            for (int i=0;i<6*SIZE;i++) {
+            	
+        		ItemStack stack = inv[i/SIZE][i%SIZE];
+        		if (stack != null) {
+                    NBTTagCompound tag = new NBTTagCompound();
+                    tag.setByte("Slot", (byte) i);
+                    stack.writeToNBT(tag);
+                    itemList.appendTag(tag);
+        		}
+            	
             }
             tagCompound.setTag("Inventory", itemList);
             
     }
+
+	public void dropItems(int start, int end) {
+		Random random = new Random();
+		for(int i=start;i<end;i++) {
+			ItemStack stack = getStackInSlot(i);
+
+            if (stack != null && ! worldObj.isRemote)
+            {
+                float xOffset = random.nextFloat() * 0.8F + 0.1F;
+                float zOffset = random.nextFloat() * 0.8F + 0.1F;
+                EntityItem entityItem;
+
+                for (float yOffset = random.nextFloat() * 0.8F + 0.1F; stack.stackSize > 0; worldObj.spawnEntityInWorld(entityItem))
+                {
+                    int dropSize = random.nextInt(21) + 10;
+
+                    if (dropSize > stack.stackSize)
+                    	dropSize = stack.stackSize;
+
+                    stack.stackSize -= dropSize;
+                    entityItem = new EntityItem(worldObj, (double)((float)xCoord + xOffset), (double)((float)yCoord + zOffset), (double)((float)zCoord + yOffset), new ItemStack(stack.itemID, dropSize, stack.getItemDamage()));
+                    float maxMotion = 0.05F;
+                    entityItem.motionX = (double)((float)random.nextGaussian() * maxMotion);
+                    entityItem.motionY = (double)((float)random.nextGaussian() * maxMotion + 0.2F);
+                    entityItem.motionZ = (double)((float)random.nextGaussian() * maxMotion);
+
+                    if (stack.hasTagCompound())
+                    {
+                    	entityItem.getEntityItem().setTagCompound((NBTTagCompound)stack.getTagCompound().copy());
+                    }
+                }
+            }
+            setInventorySlotContents(i, null);
+		}
+		
+	}
 	
 }

@@ -40,9 +40,8 @@ public class GuiWormholeManipulator extends GuiContainer {
 		ItemStack stack = inventorySlots.getSlot(36).getStack();
 		if(stack == null || stack.itemID != Wormhole.inventoryInterractor.itemID)
 			this.drawTexturedModalRect(x+7, y+6, 0, 178, 162, 253-178);
-		byte selected = ((ContainerWormholeManipulator) inventorySlots).tile.selected;
-		this.drawTexturedModalRect(x+61+9*selected,y+72,176,0,9,9);
-		((ContainerWormholeManipulator) inventorySlots).updateSlots();
+		byte selectedSide = ((ContainerWormholeManipulator)inventorySlots).getSelectedSide();
+		this.drawTexturedModalRect(x+61+9*selectedSide,y+72,176,0,9,9);
 	}
 
 	@Override
@@ -50,7 +49,7 @@ public class GuiWormholeManipulator extends GuiContainer {
 		int x1 = x-(width - xSize) / 2;
 		int y1= y-(height - ySize) / 2;
 		if(x1>=61 && x1<69+9*5 && y1>=72 && y1<81) {
-			((ContainerWormholeManipulator) inventorySlots).tile.setSelected((byte) ((x1-61)/9));
+			((ContainerWormholeManipulator) inventorySlots).setSelectedSide((byte) ((x1-61)/9));
 		}
 		super.mouseClicked(x,y,modifiers);
 	}

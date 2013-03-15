@@ -1,16 +1,19 @@
 package com.foivos.wormhole.transport;
 
-import java.util.Random;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 
-import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.inventory.Container;
+import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.network.packet.Packet250CustomPayload;
 
 import com.foivos.wormhole.Wormhole;
+
+import cpw.mods.fml.common.network.PacketDispatcher;
 
 /**
  *The Container that handles the Wormhole Manipulator.
@@ -20,14 +23,18 @@ import com.foivos.wormhole.Wormhole;
  */
 public class ContainerWormholeManipulator extends Container{
 	
+	public final static int SIZE = TileWormholeManipulator.SIZE;
+	
 	public TileWormholeManipulator tile = null;
+	
+	
+	private byte selectedSide=0;
 	
 	public ContainerWormholeManipulator (InventoryPlayer inventoryPlayer, TileWormholeManipulator te){
         tile = te;
         
         bindPlayerInventory(inventoryPlayer);
-        addSlotToContainer((new SlotWormholeManipulator(tile, 0, 152, 7)));
-        updateSlots();
+        updateadditionalSlots();
 	}
 	
 	protected void bindPlayerInventory(InventoryPlayer inventoryPlayer) {
@@ -67,11 +74,12 @@ public class ContainerWormholeManipulator extends Container{
                     }
                     //places it into the tileEntity is possible since its in the player inventory
                     else {
-                		if(stackInSlot.itemID == Wormhole.inventoryInterractor.itemID && tile.getStackInSlot(0)==null) {
+                		if(stackInSlot.itemID == Wormhole.inventoryInterractor.itemID && ((Slot)inventorySlots.get(36)).getStack()==null) {
 	                    	stackInSlot.stackSize -= 1;
 	                    	ItemStack tempStack = stackInSlot.copy();
 	                    	tempStack.stackSize = 1;
-	                    	tile.setInventorySlotContents(0, tempStack);
+	                    	((Slot)inventorySlots.get(36)).putStack(tempStack);
+	                    	return null;
                 		}
                 		if(inventorySlots.size()>37) {
                 			
@@ -92,62 +100,109 @@ public class ContainerWormholeManipulator extends Container{
             }
             return stack;
     }
-
-	public void updateSlots() {
-		ItemStack stack = tile.getStackInSlot(0);
+	
+	/**
+	 *Updates the slots that are bound to this container.
+	 */
+	public void updateadditionalSlots() {
+		inventorySlots = inventorySlots.subList(0, 36);
+		addSlotToContainer((new SlotInventoryInterractor(tile, SIZE*selectedSide, 152, 7)));
+		ItemStack stack = getSlot(36).getStack();
 		if(stack != null && stack.itemID == Wormhole.inventoryInterractor.itemID) {
-			if(inventorySlots.size() == 57) 
-				return;
-			addSlotToContainer(new SlotWormholeManipulator(tile, 1, 8, 7));
-			addSlotToContainer(new SlotWormholeManipulator(tile, 2, 26, 7));
+			addSlotToContainer(new SlotUpgrade(tile, SIZE*selectedSide+1, 8, 7, -1));
+			addSlotToContainer(new SlotUpgrade(tile, SIZE*selectedSide+2, 26, 7, -1));
 			for(int i=0;i<9;i++) {
-				addSlotToContainer(new Slot(tile, 3+i, 8+(i%3)*18, 28+(i/3)*18));
+				addSlotToContainer(new Slot(tile, SIZE*selectedSide+3+i, 8+(i%3)*18, 28+(i/3)*18));
 			}
 			for(int i=0;i<9;i++) {
-				addSlotToContainer(new Slot(tile, 12+i, 116+(i%3)*18, 28+(i/3)*18));
+				addSlotToContainer(new Slot(tile, SIZE*selectedSide+12+i, 116+(i%3)*18, 28+(i/3)*18));
 			}
-			if(tile.worldObj.isRemote)
-				tile.updateSelected();
 		}
-		else {
-			if(inventorySlots.size() == 37)
-				return;
-			
-			Random rand = new Random();
-			for (int i = 1; i < 21; i++) {
-                ItemStack item = tile.getStackInSlot(i);
+		
+		
+	}
+	
+	public byte getSelectedSide() {
+		return selectedSide;
+	}
 
-                if (item != null && item.stackSize > 0) {
-                    float rx = rand.nextFloat() * 0.8F + 0.1F;
-                    float ry = rand.nextFloat() * 0.8F + 0.1F;
-                    float rz = rand.nextFloat() * 0.8F + 0.1F;
+	public void setSelectedSide(byte selectedSide) {
+		if(this.selectedSide == selectedSide)
+			return;
+		this.selectedSide = selectedSide;
+		sendSelectedSideToServer();
+		updateadditionalSlots();
+	}
 
-                    EntityItem entityItem = new EntityItem(tile.worldObj,
-                                    tile.xCoord + rx, tile.yCoord + ry, tile.zCoord + rz,
-                                    new ItemStack(item.itemID, item.stackSize, item.getItemDamage()));
-                    if (item.hasTagCompound()) {
-                            entityItem.getEntityItem().setTagCompound((NBTTagCompound) item.getTagCompound().copy());
-                    }
+	private void sendSelectedSideToServer() {
+		ByteArrayOutputStream bos = new ByteArrayOutputStream(8);
+        DataOutputStream outputStream = new DataOutputStream(bos);
+        try
+        {
+            outputStream.writeByte(selectedSide);
+        }
+        catch (Exception ex)
+        {
+            ex.printStackTrace();
+        }
+ 
+        Packet250CustomPayload packet = new Packet250CustomPayload();
+        packet.channel = "WHmanipulator";
+        packet.data = bos.toByteArray();
+        packet.length = bos.size();
+        PacketDispatcher.sendPacketToServer(packet);
+		
+	}
 
-                    float factor = 0.05F;
-                    entityItem.motionX = rand.nextGaussian() * factor;
-                    entityItem.motionY = rand.nextGaussian() * factor + 0.2F;
-                    entityItem.motionZ = rand.nextGaussian() * factor;
-                    if(!tile.worldObj.isRemote)
-                    	tile.worldObj.spawnEntityInWorld(entityItem);
-                    
-                    item.stackSize = 0;
-                    tile.setInventorySlotContents(i, null);
-                }
-                
-                inventorySlots = inventorySlots.subList(0, 37);
-    			
+	private class SlotInventoryInterractor extends Slot{
+		
+		
+		public SlotInventoryInterractor(IInventory inv, int slotNumber, int x, int y) {
+			super(inv, slotNumber, x, y);
+			// TODO Auto-generated constructor stub
+		}
+
+		@Override
+		public int getSlotStackLimit() {
+			return 1;
+		}
+		
+		@Override
+		public boolean isItemValid(ItemStack stack) {
+			return ((TileWormholeManipulator) inventory).isItemValid(getSlotIndex(), stack);
+		}
+		
+		@Override
+		public void onSlotChanged() {
+			super.onSlotChanged();
+			if(getStack() == null || getStack().itemID != Wormhole.inventoryInterractor.itemID) {
+				tile.dropItems(SIZE*selectedSide, SIZE*(selectedSide+1));
 			}
-			if(tile.worldObj.isRemote)
-				tile.updateSelected();
+			updateadditionalSlots();
+		}
+	}
+	
+	private class SlotUpgrade extends Slot{
+		
+		private int acceptID;
+		
+		public SlotUpgrade(IInventory inv, int slotNumber, int x, int y, int acceptID) {
+			super(inv, slotNumber, x, y);
+			this.acceptID = acceptID;
+		}
+
+		@Override
+		public int getSlotStackLimit() {
+			return 1;
+		}
+		
+		@Override
+		public boolean isItemValid(ItemStack stack) {
+			return acceptID == stack.itemID;
 		}
 		
 	}
+
 
 
 
