@@ -7,6 +7,7 @@ import net.minecraft.util.StatCollector;
 
 import org.lwjgl.opengl.GL11;
 
+import com.foivos.wormhole.CommonProxy;
 import com.foivos.wormhole.Wormhole;
 
 public class GuiWormholeManipulator extends GuiContainer {
@@ -31,7 +32,7 @@ public class GuiWormholeManipulator extends GuiContainer {
 	protected void drawGuiContainerBackgroundLayer(float par1, int par2,
 			int par3) {
 		// draw your Gui here, only thing you need to change is the path
-		int texture = mc.renderEngine.getTexture("/com/foivos/wormhole/manipulator.png");
+		int texture = mc.renderEngine.getTexture(CommonProxy.WORMHOLE_MANIPULATOR_GUI);
 		GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
 		this.mc.renderEngine.bindTexture(texture);
 		int x = (width - xSize) / 2;
