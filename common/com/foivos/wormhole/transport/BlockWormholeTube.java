@@ -4,6 +4,7 @@ import net.minecraft.block.BlockContainer;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.renderer.texture.IconRegister;
 import net.minecraft.creativetab.CreativeTabs;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.Icon;
@@ -11,6 +12,7 @@ import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 
 import com.foivos.wormhole.CommonProxy;
+import com.foivos.wormhole.networking.TileNetwork;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -79,6 +81,7 @@ public class BlockWormholeTube extends BlockContainer
 		super.onNeighborBlockChange(world, x, y, z, blockID);
 		TileWormholeTube tile = (TileWormholeTube) world.getBlockTileEntity(x, y, z);
 		tile.updateConnections();
+		tile.updateNetwork();
 	}
 	
 	@Override
@@ -86,7 +89,7 @@ public class BlockWormholeTube extends BlockContainer
 		super.onBlockAdded(world, x, y, z);
 		TileWormholeTube tile = (TileWormholeTube) world.getBlockTileEntity(x, y, z);
 		tile.updateConnections();
-		
+		tile.updateNetwork();
 	}
 	
 	
@@ -111,6 +114,16 @@ public class BlockWormholeTube extends BlockContainer
     {
         return CommonProxy.WORMHOLE_TUBE_RENDER_ID;
     }
+	
+	/*@Override
+	public boolean onBlockActivated(World world, int x, int y,
+			int z, EntityPlayer par5EntityPlayer, int par6, float par7,
+			float par8, float par9) {
+		System.out.println(((TileNetwork)world.getBlockTileEntity(x, y, z)).network);
+		
+		return super.onBlockActivated(world, x, y, z, par5EntityPlayer,
+				par6, par7, par8, par9);
+	}*/
 	
 
 }

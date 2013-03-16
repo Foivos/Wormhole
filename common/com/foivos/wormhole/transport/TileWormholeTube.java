@@ -1,15 +1,18 @@
 package com.foivos.wormhole.transport;
 
+import com.foivos.wormhole.networking.TileNetwork;
+import com.foivos.wormhole.networking.WormholeNetwork;
+
 import net.minecraft.inventory.IInventory;
+import net.minecraft.inventory.ISidedInventory;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.INetworkManager;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.Packet132TileEntityData;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.common.ForgeDirection;
-import net.minecraftforge.common.ISidedInventory;
 
-public class TileWormholeTube extends TileEntity {
+public class TileWormholeTube extends TileNetwork {
 
 	private byte connections = 0;
 	
@@ -50,12 +53,13 @@ public class TileWormholeTube extends TileEntity {
 			TileEntity tile = worldObj.getBlockTileEntity(x, y, z);
 			if(tile == null)
 				continue;
-			if(tile instanceof TileWormholeTube) {
-				connections |= 1<<i;
+			if(tile instanceof TileNetwork) {
+				if(((TileNetwork) tile).connects(i^1))
+					connections |= 1<<i;
 				continue;
 			}
 			if(tile instanceof ISidedInventory) {
-				if(((ISidedInventory)tile).getSizeInventorySide(ForgeDirection.getOrientation(i^1)) > 0)
+				if(((ISidedInventory)tile).func_94127_c(i^1) > 0)
 					connections |= 1<<i;
 				continue;
 			}

@@ -17,13 +17,15 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.common.ForgeDirection;
 
 import com.foivos.wormhole.Wormhole;
+import com.foivos.wormhole.networking.TileNetwork;
 
-public class TileWormholeManipulator extends TileEntity implements ISidedInventory {
+public class TileWormholeManipulator extends TileNetwork implements ISidedInventory {
 	
 	public final static int SIZE = 21;
 	private ItemStack[][] inv = new ItemStack[6][];
 	
 	public TileWormholeManipulator() {
+		super();
 		for(int i=0; i<6; i++) {
 			inv[i] = new ItemStack[SIZE];
 		}
@@ -127,7 +129,6 @@ public class TileWormholeManipulator extends TileEntity implements ISidedInvento
 		}
 		return true;
 	}
-
 	
 	@Override
 	public Packet getDescriptionPacket ()
