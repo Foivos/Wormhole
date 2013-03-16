@@ -59,46 +59,46 @@ public class ContainerWormholeManipulator extends Container{
 	
 	@Override
     public ItemStack transferStackInSlot(EntityPlayer player, int slot) {
-			Slot invSlot = (Slot) inventorySlots.get(slot);
-			ItemStack stackInSlot = invSlot.getStack();
-            ItemStack stack = null;
+		Slot invSlot = (Slot) inventorySlots.get(slot);
+		ItemStack stackInSlot = invSlot.getStack();
+        ItemStack stack = null;
 
-            //null checks and checks if the item can be stacked (maxStackSize > 1)
-            if (stackInSlot != null) {
-            		stack = stackInSlot.copy();
-                    //merges the item into player inventory since its in the tileEntity
-                    if (slot >=36) {
-                        if (!this.mergeItemStack(stackInSlot, 0, 36, false)) {
-                             return null;  	
-                        }
-                    }
-                    //places it into the tileEntity is possible since its in the player inventory
-                    else {
-                		if(stackInSlot.itemID == Wormhole.inventoryInterractor.itemID && ((Slot)inventorySlots.get(36)).getStack()==null) {
-	                    	stackInSlot.stackSize -= 1;
-	                    	ItemStack tempStack = stackInSlot.copy();
-	                    	tempStack.stackSize = 1;
-	                    	((Slot)inventorySlots.get(36)).putStack(tempStack);
-	                    	return null;
-                		}
-                		if(inventorySlots.size()>37) {
-                			
-	                		if(!this.mergeItemStack(stackInSlot, 39, 57, false)) {
-	                			return null;
-	                		}
-                		}
-                    }
-
-                    
-
-            		if (stackInSlot.stackSize == 0) {
-                        invSlot.putStack(null);
-            		}
-                    if (stackInSlot.stackSize == stack.stackSize) {
-                        return null;
-                    }
+        //null checks and checks if the item can be stacked (maxStackSize > 1)
+        if (stackInSlot != null) {
+    		stack = stackInSlot.copy();
+            //merges the item into player inventory since its in the tileEntity
+            if (slot >=36) {
+                if (!this.mergeItemStack(stackInSlot, 0, 36, false)) {
+                     stack = null;  	
+                }
             }
-            return stack;
+            //places it into the tileEntity is possible since its in the player inventory
+            else {
+        		if(stackInSlot.itemID == Wormhole.inventoryInterractor.itemID && ((Slot)inventorySlots.get(36)).getStack()==null) {
+                	stackInSlot.stackSize -= 1;
+                	ItemStack tempStack = stackInSlot.copy();
+                	tempStack.stackSize = 1;
+                	((Slot)inventorySlots.get(36)).putStack(tempStack);
+                	stack = null;
+        		}
+        		if(inventorySlots.size()>37) {
+        			
+            		if(!this.mergeItemStack(stackInSlot, 39, 57, false)) {
+            			stack = null;
+            		}
+        		}
+            }
+
+            
+
+    		if (stackInSlot.stackSize == 0) {
+                invSlot.putStack(null);
+    		}
+            if (stack != null && stackInSlot.stackSize == stack.stackSize) {
+                return null;
+            }
+        }
+        return stack;
     }
 	
 	/**

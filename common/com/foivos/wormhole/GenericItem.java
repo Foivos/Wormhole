@@ -13,8 +13,4 @@ public class GenericItem extends Item {
                 maxStackSize = 64;
                 setCreativeTab(CreativeTabs.tabMisc);
         }
-        
-        public String getTextureFile() {
-                return CommonProxy.ITEMS_PNG;
-        }
 }

@@ -5,6 +5,8 @@ import java.util.Random;
 
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.inventory.IInventory;
+import net.minecraft.inventory.ISidedInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
@@ -13,7 +15,6 @@ import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.Packet132TileEntityData;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.common.ForgeDirection;
-import net.minecraftforge.common.ISidedInventory;
 
 import com.foivos.wormhole.Wormhole;
 
@@ -105,15 +106,6 @@ public class TileWormholeManipulator extends TileEntity implements ISidedInvento
 		
 	}
 
-	@Override
-	public int getStartInventorySide(ForgeDirection side) {
-		return 0;
-	}
-
-	@Override
-	public int getSizeInventorySide(ForgeDirection side) {
-		return 0;
-	}
 
 	public int getSlotStackLimit(int slot) {
 		if(slot == 0)
@@ -220,5 +212,27 @@ public class TileWormholeManipulator extends TileEntity implements ISidedInvento
 		}
 		
 	}
+
+	@Override
+	public boolean func_94042_c() {
+		return false;
+	}
+
+	@Override
+	public boolean func_94041_b(int side, ItemStack stack) {
+		return true;
+	}
+
+	@Override
+	public int func_94127_c(int i) {
+		return 0;
+	}
+
+	@Override
+	public int func_94128_d(int i) {
+		return 0;
+	}
+
+
 	
 }

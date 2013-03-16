@@ -35,9 +35,9 @@ public class Wormhole {
 	
 	public final static Block wormholeTube = new BlockWormholeTube(500);
 	public final static Block wormholeManipulator = new BlockWormholeManipulator(501);
-	public final static Item wormholeMatter = new GenericItem(5000).setItemName("wormholeMatter").setIconIndex(1);
-	public final static Item wormholeEssence = new GenericItem(5001).setItemName("wormholeEssence").setIconIndex(0);
-	public final static Item inventoryInterractor = new GenericItem(5002).setItemName("inventoryInterractor").setIconIndex(2);
+	public final static Item wormholeMatter = new GenericItem(5000).setUnlocalizedName("Wormhole:matter");
+	public final static Item wormholeEssence = new GenericItem(5001).setUnlocalizedName("Wormhole:essence");
+	public final static Item inventoryInterractor = new GenericItem(5002).setUnlocalizedName("Wormhole:interractor");
 	
 	public final static PacketHandler packetHandler = new PacketHandler();
 	// The instance of your mod that Forge uses.

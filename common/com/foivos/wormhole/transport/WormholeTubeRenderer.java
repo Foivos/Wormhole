@@ -3,6 +3,7 @@ package com.foivos.wormhole.transport;
 import net.minecraft.block.Block;
 import net.minecraft.client.renderer.RenderBlocks;
 import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.util.Icon;
 import net.minecraft.world.IBlockAccess;
 
 import com.foivos.wormhole.CommonProxy;
@@ -14,31 +15,33 @@ public class WormholeTubeRenderer implements ISimpleBlockRenderingHandler{
 	@Override
 	public void renderInventoryBlock(Block block, int metadata, int modelID, RenderBlocks renderer) {
 		int x=0, y=0, z=0;
+		Icon icon1 = ((BlockWormholeTube)block).icons[0];
+		Icon icon2 = ((BlockWormholeTube)block).icons[3];
 		Tessellator tes = Tessellator.instance;
 		renderer.setRenderBounds(block.getBlockBoundsMinX(),0,block.getBlockBoundsMinZ(),block.getBlockBoundsMaxX(),1,block.getBlockBoundsMaxZ());
         tes.startDrawingQuads();
         tes.setNormal(0.0F, -1.0F, 0.0F);
-		renderer.renderBottomFace(block, x,y,z,0);
+		renderer.renderBottomFace(block, x,y,z,icon1);
 		tes.draw();
 		tes.startDrawingQuads();
         tes.setNormal(0.0F, -1.0F, 0.0F);
-		renderer.renderTopFace(block, x,y,z,0);
+		renderer.renderTopFace(block, x,y,z,icon1);
 		tes.draw();
 		tes.startDrawingQuads();
         tes.setNormal(0.0F, -1.0F, 0.0F);
-		renderer.renderEastFace(block, x,y,z,3);
+		renderer.renderEastFace(block, x,y,z,icon2);
 		tes.draw();
 		tes.startDrawingQuads();
         tes.setNormal(0.0F, -1.0F, 0.0F);
-		renderer.renderWestFace(block, x,y,z,3);
+		renderer.renderWestFace(block, x,y,z,icon2);
 		tes.draw();
 		tes.startDrawingQuads();
         tes.setNormal(0.0F, -1.0F, 0.0F);
-		renderer.renderNorthFace(block, x,y,z,3);
+		renderer.renderNorthFace(block, x,y,z,icon2);
 		tes.draw();
 		tes.startDrawingQuads();
         tes.setNormal(0.0F, -1.0F, 0.0F);
-		renderer.renderSouthFace(block, x,y,z,3);
+		renderer.renderSouthFace(block, x,y,z,icon2);
 		tes.draw();
 	}
 	@Override
