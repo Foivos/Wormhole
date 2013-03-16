@@ -80,8 +80,7 @@ public class ContainerWormholeManipulator extends Container{
                 	tempStack.stackSize = 1;
                 	((Slot)inventorySlots.get(36)).putStack(tempStack);
                 	stack = null;
-        		}
-        		if(inventorySlots.size()>37) {
+        		} else if(inventorySlots.size()>37) {
         			
             		if(!this.mergeItemStack(stackInSlot, 39, 57, false)) {
             			stack = null;
