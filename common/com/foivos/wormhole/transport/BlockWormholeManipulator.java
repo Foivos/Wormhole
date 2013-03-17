@@ -7,6 +7,7 @@ import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Icon;
+import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 
 import com.foivos.wormhole.CommonProxy;
@@ -21,7 +22,7 @@ import cpw.mods.fml.relauncher.SideOnly;
  */
 public class BlockWormholeManipulator extends BlockContainer {
 
-	public Icon[] icons = new Icon[6];
+	public Icon[] icons = new Icon[12];
 
 	public BlockWormholeManipulator(int id) {
 		super(id, Material.rock);
@@ -38,32 +39,27 @@ public class BlockWormholeManipulator extends BlockContainer {
 	@Override
 	public boolean onBlockActivated(World world, int x, int y, int z,
 			EntityPlayer player, int idk, float what, float these, float are) {
-		TileEntity tileEntity = world.getBlockTileEntity(x, y, z);
-		if (tileEntity == null || player.isSneaking()) {
+		TileEntity tile = world.getBlockTileEntity(x, y, z);
+		if (tile == null || !(tile instanceof TileWormholeManipulator) || (((TileWormholeManipulator)tile).network != null && ((TileWormholeManipulator)tile).network.activated)) 
 			return false;
-		}
+		if(player.isSneaking() || player.inventory.getCurrentItem().itemID == Wormhole.wormholeActivator.itemID )
+			return false;
 		player.openGui(Wormhole.instance, 0, world, x, y, z);
 		return true;
-	}
-
-	@Override
-	public void onBlockAdded(World world, int x, int y, int z) {
-		super.onBlockAdded(world, x, y, z);
-		TileNetwork tile = (TileNetwork) world.getBlockTileEntity(x, y, z);
-		tile.updateNetwork();
 	}
 	
 	@Override
 	public void onNeighborBlockChange(World world, int x, int y, int z, int id) {
 		super.onNeighborBlockChange(world, x, y, z, id);
 		TileNetwork tile = (TileNetwork) world.getBlockTileEntity(x, y, z);
-		tile.updateNetwork();
+		if(tile.network != null && tile.network.activated)
+			tile.network.validate();
 	}
 
 	@Override
 	@SideOnly(Side.CLIENT)
 	public void func_94332_a(IconRegister register) {
-		for (int i = 0; i < 6; i++) {
+		for (int i = 0; i < 12; i++) {
 			icons[i] = register.func_94245_a("Wormhole:manipulator" + i);
 		}
 	}
@@ -72,5 +68,12 @@ public class BlockWormholeManipulator extends BlockContainer {
 	@SideOnly(Side.CLIENT)
 	public Icon getBlockTextureFromSideAndMetadata(int side, int meta) {
 		return icons[side];
+	}
+	
+	@Override
+	@SideOnly(Side.CLIENT)
+	public Icon getBlockTexture(IBlockAccess blockAccess, int x, int y, int z, int side) {
+		TileWormholeManipulator tile = (TileWormholeManipulator) blockAccess.getBlockTileEntity(x, y, z);
+		return icons[side + (tile.network != null && tile.network.activated ? 6 : 0)];
 	}
 }

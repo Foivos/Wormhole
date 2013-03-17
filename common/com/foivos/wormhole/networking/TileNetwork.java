@@ -6,13 +6,7 @@ public class TileNetwork extends TileEntity{
 	public WormholeNetwork network;
 		
 	public boolean connects(int side) {
-		return true;
-	}
-	
-	
-
-	public void updateNetwork() {
-		new WormholeNetwork(worldObj, xCoord, yCoord, zCoord);
+		return network == null || !network.activated;
 	}
 	
 }

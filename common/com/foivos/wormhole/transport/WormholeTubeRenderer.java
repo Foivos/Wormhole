@@ -46,6 +46,7 @@ public class WormholeTubeRenderer implements ISimpleBlockRenderingHandler{
 	}
 	@Override
 	public boolean renderWorldBlock(IBlockAccess world, int x, int y, int z, Block block, int modelId, RenderBlocks renderer) {
+		Tessellator.instance.setBrightness(block.getMixedBrightnessForBlock(world,x,y,z));
 		renderer.setRenderBounds(0, block.getBlockBoundsMinY(),0, 1, 1, 1);
 		renderer.renderBottomFace(block, x,y,z,block.getBlockTexture(world, x, y, z, 0));
 		renderer.setRenderBounds(0, 0, 0, 1,block.getBlockBoundsMaxY(), 1);

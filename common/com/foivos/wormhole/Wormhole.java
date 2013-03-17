@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import net.minecraft.block.Block;
+import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
@@ -35,9 +36,10 @@ public class Wormhole {
 	
 	public final static Block wormholeTube = new BlockWormholeTube(500);
 	public final static Block wormholeManipulator = new BlockWormholeManipulator(501);
-	public final static Item wormholeMatter = new GenericItem(5000).setUnlocalizedName("Wormhole:matter");
-	public final static Item wormholeEssence = new GenericItem(5001).setUnlocalizedName("Wormhole:essence");
-	public final static Item inventoryInterractor = new GenericItem(5002).setUnlocalizedName("Wormhole:interractor");
+	public final static Item wormholeMatter = new Item(5000).setUnlocalizedName("Wormhole:matter").setCreativeTab(CreativeTabs.tabMisc);
+	public final static Item wormholeEssence = new Item(5001).setUnlocalizedName("Wormhole:essence").setCreativeTab(CreativeTabs.tabMisc);;
+	public final static Item inventoryInterractor = new Item(5002).setUnlocalizedName("Wormhole:interractor").setCreativeTab(CreativeTabs.tabMisc);;
+	public final static Item wormholeActivator = new ItemWormholeActivator(5003).setUnlocalizedName("Wormhole:activator").setCreativeTab(CreativeTabs.tabMisc);;
 	
 	public final static PacketHandler packetHandler = new PacketHandler();
 	// The instance of your mod that Forge uses.
@@ -67,6 +69,8 @@ public class Wormhole {
             LanguageRegistry.addName(wormholeEssence, "Wormhole Essence");
             LanguageRegistry.addName(wormholeMatter, "Wormhole Matter");
             LanguageRegistry.addName(inventoryInterractor, "Inventory Interractor");
+            LanguageRegistry.addName(wormholeActivator, "Wormhole Activator");
+            
             addRecipes();
             
     }
@@ -83,12 +87,13 @@ public class Wormhole {
     	//Item.dyePowder.
     	for(ItemStack stack1 : dyeList) {
     		for(ItemStack stack2 : dyeList) {
-    			GameRegistry.addRecipe(new ItemStack(wormholeManipulator), "oao", "rwr", "obo", 'o', Block.obsidian, 'w', wormholeEssence, 'a',stack1, 'b', stack2, 'r', Item.redstone);
+    			GameRegistry.addRecipe(new ItemStack(wormholeManipulator), "oao", "rtr", "obo", 'o', Block.obsidian, 't', wormholeTube, 'a',stack1, 'b', stack2, 'r', Item.redstone);
         	}
     	}
     	 
-		GameRegistry.addRecipe(new ItemStack(inventoryInterractor), "gwg", "gpg", "gbg", 'g', Item.goldNugget, 'w', wormholeEssence, 'p', Block.pistonBase, 'b', Item.blazePowder);
-	}
+		GameRegistry.addRecipe(new ItemStack(inventoryInterractor), "gbg", "gwg", "gbg", 'g', Item.goldNugget, 'w', wormholeEssence, 'b', Item.blazePowder);
+		GameRegistry.addRecipe(new ItemStack(wormholeActivator), "iwi", " i ", " i ", 'i', Item.ingotIron, 'w', wormholeEssence);
+    }
 
 	@PostInit
     public void postInit(FMLPostInitializationEvent event) {

@@ -3,6 +3,7 @@ package com.foivos.wormhole.transport;
 import net.minecraft.block.BlockContainer;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.renderer.texture.IconRegister;
+import net.minecraft.client.renderer.texture.TextureStitched;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.tileentity.TileEntity;
@@ -24,7 +25,7 @@ public class BlockWormholeTube extends BlockContainer
 {
 
 	private static final float blockThickness = 0.5f;
-	public Icon[] icons = new Icon[16];
+	public Icon[] icons = new Icon[32];
 	
 	public BlockWormholeTube (int id) {
         super(id, Material.rock);
@@ -47,13 +48,21 @@ public class BlockWormholeTube extends BlockContainer
 	@Override
 	@SideOnly(Side.CLIENT)
 	public void func_94332_a(IconRegister register) {
-		for(int i=0;i<16;i++) {
+		for(int i=0;i<32;i++) {
 			icons[i] = register.func_94245_a("Wormhole:tube"+i);
 		}
+		
 	}
 	
 	@Override
-	public Icon getBlockTexture(IBlockAccess blockAccess, int x,	int y, int z, int side) {
+	@SideOnly(Side.CLIENT)
+	public Icon getBlockTextureFromSideAndMetadata(int side, int meta) {
+		// TODO Auto-generated method stub
+		return icons[0];
+	}
+	
+	@Override
+	public Icon getBlockTexture(IBlockAccess blockAccess, int x, int y, int z, int side) {
 		TileWormholeTube tile = (TileWormholeTube) blockAccess.getBlockTileEntity(x, y, z);
 		byte connections = tile.getConnections();
 		//The 4th byte of the texture index indicates whether that side should have its part that falls in the boundaries rendered.
@@ -73,15 +82,17 @@ public class BlockWormholeTube extends BlockContainer
 			int nextSide = prevSide ^ 1;
 			texture |= (connections & (1<<nextSide))>>nextSide<<3;
 		}
-		return icons[texture];
+		return icons[texture + (tile.network != null && tile.network.activated ? 16 : 0)];
 	}
 	
 	@Override
 	public void onNeighborBlockChange(World world, int x, int y, int z, int blockID) {
 		super.onNeighborBlockChange(world, x, y, z, blockID);
 		TileWormholeTube tile = (TileWormholeTube) world.getBlockTileEntity(x, y, z);
-		tile.updateConnections();
-		tile.updateNetwork();
+		if(tile.network == null || !tile.network.activated)
+			tile.updateConnections();
+		else
+			tile.network.validate();
 	}
 	
 	@Override
@@ -89,15 +100,14 @@ public class BlockWormholeTube extends BlockContainer
 		super.onBlockAdded(world, x, y, z);
 		TileWormholeTube tile = (TileWormholeTube) world.getBlockTileEntity(x, y, z);
 		tile.updateConnections();
-		tile.updateNetwork();
 	}
 	
 	
 	@Override
-	public AxisAlignedBB getSelectedBoundingBoxFromPool(World par1World, int par2, int par3, int par4)
+	public AxisAlignedBB getSelectedBoundingBoxFromPool(World par1World, int x, int y, int z)
     {
-        double var5 = (1-blockThickness)/2;
-        return AxisAlignedBB.getAABBPool().getAABB((double)par2 + var5, (double)par3+var5, (double)par4 + var5, (double)(par2 + 1) - var5, (double)(par3 + 1) - var5, (double)(par4 + 1) - var5);
+        double margin = (1-blockThickness)/2;
+        return AxisAlignedBB.getAABBPool().getAABB((double)x + margin, (double)y+margin, (double)z + margin, (double)(x + 1) - margin, (double)(y + 1) - margin, (double)(z + 1) - margin);
     }
 	@Override
     public boolean renderAsNormalBlock()

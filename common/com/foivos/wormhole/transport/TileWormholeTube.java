@@ -54,8 +54,11 @@ public class TileWormholeTube extends TileNetwork {
 			if(tile == null)
 				continue;
 			if(tile instanceof TileNetwork) {
-				if(((TileNetwork) tile).connects(i^1))
+				if(((TileNetwork) tile).connects(i^1)) {
 					connections |= 1<<i;
+					if(tile instanceof TileWormholeTube)
+						((TileWormholeTube)tile).connections |= 1<<(i^1);
+				}
 				continue;
 			}
 			if(tile instanceof ISidedInventory) {
