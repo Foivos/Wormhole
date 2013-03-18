@@ -13,6 +13,7 @@ import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 
 import com.foivos.wormhole.CommonProxy;
+import com.foivos.wormhole.networking.NetworkManager;
 import com.foivos.wormhole.networking.TileNetwork;
 
 import cpw.mods.fml.relauncher.Side;
@@ -57,7 +58,6 @@ public class BlockWormholeTube extends BlockContainer
 	@Override
 	@SideOnly(Side.CLIENT)
 	public Icon getBlockTextureFromSideAndMetadata(int side, int meta) {
-		// TODO Auto-generated method stub
 		return icons[0];
 	}
 	
@@ -65,8 +65,7 @@ public class BlockWormholeTube extends BlockContainer
 	public Icon getBlockTexture(IBlockAccess blockAccess, int x, int y, int z, int side) {
 		TileWormholeTube tile = (TileWormholeTube) blockAccess.getBlockTileEntity(x, y, z);
 		byte connections = tile.getConnections();
-		//The 4th byte of the texture index indicates whether that side should have its part that falls in the boundaries rendered.
-		int texture=0;// = (((1<<side) & connections) >> side) << 4;;
+		int texture=0;
 		if(side < 2) {
 			texture |= (connections & 1<<2)>>1;
 			texture |= (connections & 1<<3)>>3;
@@ -82,17 +81,17 @@ public class BlockWormholeTube extends BlockContainer
 			int nextSide = prevSide ^ 1;
 			texture |= (connections & (1<<nextSide))>>nextSide<<3;
 		}
-		return icons[texture + (tile.network != null && tile.network.activated ? 16 : 0)];
+		return icons[texture + (tile.activated ? 16 : 0)];
 	}
 	
 	@Override
 	public void onNeighborBlockChange(World world, int x, int y, int z, int blockID) {
 		super.onNeighborBlockChange(world, x, y, z, blockID);
 		TileWormholeTube tile = (TileWormholeTube) world.getBlockTileEntity(x, y, z);
-		if(tile.network == null || !tile.network.activated)
+		if(!tile.activated)
 			tile.updateConnections();
 		else
-			tile.network.validate();
+			NetworkManager.validate(tile.network, tile.worldObj, x, y ,z);
 	}
 	
 	@Override
@@ -101,6 +100,7 @@ public class BlockWormholeTube extends BlockContainer
 		TileWormholeTube tile = (TileWormholeTube) world.getBlockTileEntity(x, y, z);
 		tile.updateConnections();
 	}
+
 	
 	
 	@Override

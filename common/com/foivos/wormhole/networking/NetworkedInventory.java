@@ -1,18 +1,21 @@
 package com.foivos.wormhole.networking;
 
-import net.minecraft.tileentity.TileEntity;
+import com.foivos.wormhole.Coord;
+import com.foivos.wormhole.Place;
 
-public class NetworkedInventory {
+public class NetworkedInventory extends Place{
+
 	
-	public TileEntity tile;
-	
-	public NetworkedInventory(TileEntity tile) {
-		this.tile = tile;
+	public NetworkedInventory(Place place) {
+		super(place);
 	}
-	
-	@Override
-	public String toString() {
-		return "("+tile.xCoord+", "+tile.yCoord+", "+tile.zCoord+")" ;
+
+	public NetworkedInventory(int world, Coord coord) {
+		super(world, coord);
+	}
+
+	public NetworkedInventory(int world, int x, int y, int z) {
+		super(world, x, y, z);
 	}
 
 }

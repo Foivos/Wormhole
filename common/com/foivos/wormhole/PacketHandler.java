@@ -22,16 +22,28 @@ public class PacketHandler implements IPacketHandler{
 		if (packet.channel.equals("WHmanipulator")) {
 			DataInputStream stream = new DataInputStream(new ByteArrayInputStream(packet.data));
 	 
-			try
-			{
+			try	{
 				byte selected = stream.readByte();
 				if(player instanceof EntityPlayer && ((EntityPlayer) player).openContainer instanceof ContainerWormholeManipulator) {
 					((ContainerWormholeManipulator)((EntityPlayer) player).openContainer).setSelectedSide(selected);
 				}
 			}
-			catch (IOException e)
-			{
-				System.out.println("Failed at reading client packet for TConstruct.");
+			catch (IOException e) {
+				System.out.println("Failed at reading client packet for Wormhole Manipulator.");
+				e.printStackTrace();
+				return;
+			}
+			
+		}
+		else if(packet.channel.equals("testChannel")) {
+			DataInputStream stream = new DataInputStream(new ByteArrayInputStream(packet.data));
+			 
+			try	{
+				int n = stream.readInt();
+				System.out.println(n);
+			}
+			catch(Exception e) {
+				System.out.println("Crap");
 				e.printStackTrace();
 				return;
 			}

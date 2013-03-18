@@ -7,6 +7,7 @@ import net.minecraft.block.Block;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraftforge.common.MinecraftForge;
 
 import com.foivos.wormhole.transport.BlockWormholeManipulator;
 import com.foivos.wormhole.transport.BlockWormholeTube;
@@ -22,6 +23,7 @@ import cpw.mods.fml.common.SidedProxy;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
+import cpw.mods.fml.common.network.IConnectionHandler;
 import cpw.mods.fml.common.network.NetworkMod;
 import cpw.mods.fml.common.network.NetworkRegistry;
 import cpw.mods.fml.common.registry.GameRegistry;
@@ -42,6 +44,7 @@ public class Wormhole {
 	public final static Item wormholeActivator = new ItemWormholeActivator(5003).setUnlocalizedName("Wormhole:activator").setCreativeTab(CreativeTabs.tabMisc);;
 	
 	public final static PacketHandler packetHandler = new PacketHandler();
+	public final static IConnectionHandler connectionHandler = new ConnectionHandler();
 	// The instance of your mod that Forge uses.
     @Instance("Wormhole")
     public static Wormhole instance;
@@ -64,12 +67,16 @@ public class Wormhole {
             GameRegistry.registerTileEntity(TileWormholeManipulator.class, "tileWormholeManipulator");
             NetworkRegistry.instance().registerGuiHandler(this, new GuiHandler());
             NetworkRegistry.instance().registerChannel(packetHandler, "WHmanipulator");
+            NetworkRegistry.instance().registerChannel(packetHandler, "testChannel");
+            NetworkRegistry.instance().registerConnectionHandler(connectionHandler);
             LanguageRegistry.addName(wormholeTube, "Wormhole Tube");
             LanguageRegistry.addName(wormholeManipulator, "Wormhole Manipulator");
             LanguageRegistry.addName(wormholeEssence, "Wormhole Essence");
             LanguageRegistry.addName(wormholeMatter, "Wormhole Matter");
             LanguageRegistry.addName(inventoryInterractor, "Inventory Interractor");
             LanguageRegistry.addName(wormholeActivator, "Wormhole Activator");
+            
+            MinecraftForge.EVENT_BUS.register(new WormholeSaveHandler());
             
             addRecipes();
             
@@ -84,7 +91,6 @@ public class Wormhole {
     	
     	List<ItemStack> dyeList = new ArrayList<ItemStack>(); 	
     	Item.dyePowder.getSubItems(Item.dyePowder.itemID, null, dyeList);
-    	//Item.dyePowder.
     	for(ItemStack stack1 : dyeList) {
     		for(ItemStack stack2 : dyeList) {
     			GameRegistry.addRecipe(new ItemStack(wormholeManipulator), "oao", "rtr", "obo", 'o', Block.obsidian, 't', wormholeTube, 'a',stack1, 'b', stack2, 'r', Item.redstone);

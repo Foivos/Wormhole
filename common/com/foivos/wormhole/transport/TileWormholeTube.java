@@ -14,7 +14,7 @@ import net.minecraftforge.common.ForgeDirection;
 
 public class TileWormholeTube extends TileNetwork {
 
-	private byte connections = 0;
+	protected byte connections = 0;
 	
 	
     @Override
@@ -44,6 +44,8 @@ public class TileWormholeTube extends TileNetwork {
     }
     
 	public void updateConnections() {
+		if(activated)
+			return;
 		byte connections = 0;
 		for(int i = 0;i<6;i++) {
 			ForgeDirection dir = ForgeDirection.getOrientation(i);
@@ -56,8 +58,10 @@ public class TileWormholeTube extends TileNetwork {
 			if(tile instanceof TileNetwork) {
 				if(((TileNetwork) tile).connects(i^1)) {
 					connections |= 1<<i;
-					if(tile instanceof TileWormholeTube)
-						((TileWormholeTube)tile).connections |= 1<<(i^1);
+					if(tile instanceof TileWormholeTube){
+						byte b = (byte) (((TileWormholeTube)tile).connections | 1<<(i^1));
+						((TileWormholeTube)tile).setConnections(b);
+					}
 				}
 				continue;
 			}

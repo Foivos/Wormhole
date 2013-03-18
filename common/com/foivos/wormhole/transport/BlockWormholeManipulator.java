@@ -12,6 +12,7 @@ import net.minecraft.world.World;
 
 import com.foivos.wormhole.CommonProxy;
 import com.foivos.wormhole.Wormhole;
+import com.foivos.wormhole.networking.NetworkManager;
 import com.foivos.wormhole.networking.TileNetwork;
 
 import cpw.mods.fml.relauncher.Side;
@@ -40,9 +41,9 @@ public class BlockWormholeManipulator extends BlockContainer {
 	public boolean onBlockActivated(World world, int x, int y, int z,
 			EntityPlayer player, int idk, float what, float these, float are) {
 		TileEntity tile = world.getBlockTileEntity(x, y, z);
-		if (tile == null || !(tile instanceof TileWormholeManipulator) || (((TileWormholeManipulator)tile).network != null && ((TileWormholeManipulator)tile).network.activated)) 
+		if (tile == null || !(tile instanceof TileWormholeManipulator) || ((TileWormholeManipulator)tile).activated) 
 			return false;
-		if(player.isSneaking() || player.inventory.getCurrentItem().itemID == Wormhole.wormholeActivator.itemID )
+		if(player.isSneaking() || (player.inventory.getCurrentItem() != null && player.inventory.getCurrentItem().itemID == Wormhole.wormholeActivator.itemID))
 			return false;
 		player.openGui(Wormhole.instance, 0, world, x, y, z);
 		return true;
@@ -52,8 +53,8 @@ public class BlockWormholeManipulator extends BlockContainer {
 	public void onNeighborBlockChange(World world, int x, int y, int z, int id) {
 		super.onNeighborBlockChange(world, x, y, z, id);
 		TileNetwork tile = (TileNetwork) world.getBlockTileEntity(x, y, z);
-		if(tile.network != null && tile.network.activated)
-			tile.network.validate();
+		if(tile.activated)
+			NetworkManager.validate(tile.network, tile.worldObj, x, y ,z);
 	}
 
 	@Override
@@ -74,6 +75,7 @@ public class BlockWormholeManipulator extends BlockContainer {
 	@SideOnly(Side.CLIENT)
 	public Icon getBlockTexture(IBlockAccess blockAccess, int x, int y, int z, int side) {
 		TileWormholeManipulator tile = (TileWormholeManipulator) blockAccess.getBlockTileEntity(x, y, z);
-		return icons[side + (tile.network != null && tile.network.activated ? 6 : 0)];
+		return icons[side + (tile.activated ? 6 : 0)];
+		
 	}
 }
