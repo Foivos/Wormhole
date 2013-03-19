@@ -45,7 +45,7 @@ public class BlockWormholeManipulator extends BlockWormhole {
 	@Override
 	@SideOnly(Side.CLIENT)
 	public void func_94332_a(IconRegister register) {
-		for (int i = 0; i < 12; i++) {
+		for (int i = 0; i < 54; i++) {
 			icons[i] = register.func_94245_a("Wormhole:manipulator" + i);
 		}
 	}
