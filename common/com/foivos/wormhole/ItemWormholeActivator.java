@@ -1,18 +1,13 @@
 package com.foivos.wormhole;
 
-import java.lang.management.GarbageCollectorMXBean;
-
-import com.foivos.wormhole.networking.NetworkManager;
-import com.foivos.wormhole.networking.TileNetwork;
-import com.foivos.wormhole.networking.WormholeNetwork;
-
-import cpw.mods.fml.relauncher.SideOnly;
-
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
+
+import com.foivos.wormhole.networking.WormholeNetwork;
+import com.foivos.wormhole.transport.TileWormhole;
 
 public class ItemWormholeActivator extends Item {
 
@@ -20,13 +15,26 @@ public class ItemWormholeActivator extends Item {
 		super(id);
 	}
 	
+	private static byte color = 1;
+	
 	@Override
 	public boolean onItemUse(ItemStack stack, EntityPlayer player, World world,
 			int x, int y, int z, int par7, float par8, float par9, float par10) {
-		TileEntity t = world.getBlockTileEntity(x, y, z);
-		if (t == null || !(t instanceof TileNetwork))
+		if(world.isRemote)
 			return false;
-		NetworkManager.toggleNetwork(world, x, y, z);
+		TileWormhole tile = (TileWormhole) TileManager.getTile(world, x, y ,z, TileWormhole.class, true);
+		if (tile == null || !(tile instanceof TileWormhole))
+			return false;
+		if(tile.color == 0 || tile.base == null) {
+			tile.network = new WormholeNetwork(new Spot(world, x, y, z), color);
+			color = (byte) ((color+1)%9);
+		}
+		else {
+			TileWormhole baseTile = (TileWormhole) TileManager.getTile(tile.base, true);
+			if(baseTile == null || baseTile.network == null)
+				return false;
+			baseTile.network.deactivate();
+		}
 		return true;
 	}
 

@@ -1,13 +1,15 @@
 package com.foivos.wormhole.networking;
 
 import com.foivos.wormhole.Coord;
-import com.foivos.wormhole.Place;
+import com.foivos.wormhole.Spot;
 
-public class NetworkedInventory extends Place{
+public class NetworkedInventory extends Spot{
 
+	public int side;
 	
-	public NetworkedInventory(Place place) {
-		super(place);
+	public NetworkedInventory(Spot spot, int side) {
+		super(spot);
+		this.side = side;
 	}
 
 	public NetworkedInventory(int world, Coord coord) {

@@ -1,8 +1,5 @@
 package com.foivos.wormhole.networking;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -11,7 +8,9 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import net.minecraft.inventory.IInventory;
+import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 import net.minecraftforge.common.DimensionManager;
@@ -19,160 +18,116 @@ import net.minecraftforge.common.ForgeDirection;
 
 import com.foivos.wormhole.Coord;
 import com.foivos.wormhole.Place;
-import com.foivos.wormhole.transport.TileWormholeTube;
-
-import cpw.mods.fml.common.FMLCommonHandler;
-import cpw.mods.fml.relauncher.Side;
+import com.foivos.wormhole.Spot;
+import com.foivos.wormhole.TileManager;
+import com.foivos.wormhole.transport.TileWormhole;
 
 
 
 public class WormholeNetwork {
 	
 	public List<NetworkedInventory> inventories = new ArrayList<NetworkedInventory>();
-	public List<Place> tiles = new ArrayList<Place>();
-	
-	public int id;
-	public int x, y, z;
-	public int world;
+	public List<Spot> tiles = new ArrayList<Spot>();
 
-	public boolean activated = false;
+	public Spot base;
+	public byte color;
 
 	
-	public WormholeNetwork(int id, int world, int x, int y, int z) {
-		this.id = id;
-		this.world = world;
-		this.x = x;
-		this.y = y;
-		this.z = z;
+	public WormholeNetwork(int world, int x, int y, int z, byte color) {
+		this.base = new Spot(world, x, y ,z);
+		this.color = color;
 		activate();
 	}
 
-	public WormholeNetwork(int id, DataInputStream stream) throws IOException {
-		this.id=id;
-		System.out.println("Loading network: "+this.id);
-		this.world = stream.readInt();
-		this.x = stream.readInt();
-		this.y = stream.readInt();
-		this.z = stream.readInt();
-		this.activated = true;
-		int tileCount = stream.readInt();
-		for(int i=0;i<tileCount;i++) {
-			int world = stream.readInt();
-			int x = stream.readInt();
-			int y = stream.readInt();
-			int z = stream.readInt();
-			System.out.println("Loading tile: (" + world+ ", "+z+ ", "+y+ ", "+z+ ")");
-			tiles.add(new Place(world, x, y, z));
-		}
-		int invCount = stream.readInt();
-		for(int i=0;i<invCount;i++) {
-			int world = stream.readInt();
-			int x = stream.readInt();
-			int y = stream.readInt();
-			int z = stream.readInt();
-			System.out.println("Loading inventory: (" + world+ ", "+x+ ", "+y+ ", "+z+ ")");
+	
+	public WormholeNetwork(Spot spot, byte color) {
+		this.base = spot;
+		this.color = color;
+		activate();
+	}
+
+
+	public WormholeNetwork(Spot base, byte color, NBTTagCompound tag) {
+		this.color = color;
+		this.base = base;
+		readFromNBT(tag);
+	}
+
+
+	public void activate() {System.out.println("activating");
+		explore(base.toPlace());
+	}
+	
+	public void explore(Place base) {
+		World world = base.world;
+		TileWormhole baseTile = (TileWormhole) TileManager.getTile(base, TileWormhole.class, true);
+		if(baseTile == null)
+			return;
+		baseTile.color = this.color;
+		baseTile.base = this.base;
+		tiles.add(base.toSpot());
+		world.markBlockForUpdate(base.x, base.y, base.z);
+		Set<Place> explored = new TreeSet<Place>();
+		Queue<Place> toSearch = new LinkedList<Place>();
+		explored.add(base);
+		toSearch.add(base);
+		Place place;
+		while((place = toSearch.poll()) != null) {
+			for(ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS) {
+				Place newPlace = place.move(dir);
+				if(explored.contains(newPlace))
+					continue;
+				explored.add(newPlace);
+				TileEntity tile = TileManager.getTile(newPlace, true);
+				if(tile == null)
+					continue;
+				if(tile instanceof TileWormhole) {
+					if(((TileWormhole)tile).color != 0 && ((TileWormhole)tile).color != color) {
+						continue;
+					}
+					((TileWormhole)tile).color = this.color;
+					((TileWormhole)tile).base = this.base;
+					tiles.add(newPlace.toSpot());
+					toSearch.add(newPlace);
+					world.markBlockForUpdate(newPlace.x, newPlace.y, newPlace.z);
+					continue;
+				}
+				if(tile instanceof IInventory) {
+					inventories.add(new NetworkedInventory(newPlace.toSpot(), dir.ordinal()^1));
+				}
+				
+				
+			}
 			
-			inventories.add(new NetworkedInventory(world, x, y, z));
 		}
 		
 	}
 
-	public void activate() {System.out.println("activating");
-		World world = DimensionManager.getWorld(this.world);
-		Set<Coord> explored = new TreeSet<Coord>();
-		Queue<Coord> q = new LinkedList<Coord>();
-		TileEntity t = world.getBlockTileEntity(x, y, z);
-		if (t == null || !(t instanceof TileNetwork))
-			return;
-		((TileNetwork) t).network = id;
-		((TileNetwork) t).activated = true;
-		q.add(new Coord(x, y, z));
-		if(!world.isRemote)
-			tiles.add(new Place(this.world, x, y, z));
-		t.worldObj.markBlockForUpdate(x, y, z);
-		explored.add(new Coord(x, y, z));
-		Coord coord;
-		while ((coord = q.poll()) != null) {
-			for (ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS) {
-				Coord newCoord = coord.move(dir);
-				if (explored.contains(newCoord))
-					continue;
-				explored.add(newCoord);
-				TileEntity tile = world.getBlockTileEntity(newCoord.x,
-						newCoord.y, newCoord.z);
-				if (tile == null)
-					continue;
-				if (tile instanceof IInventory && !world.isRemote) {
-					inventories.add(new NetworkedInventory(this.world, newCoord));
-				}
-
-				if (tile instanceof TileNetwork	&& !((TileNetwork) tile).activated) {
-					((TileNetwork) tile).network = id;
-					((TileNetwork) tile).activated = true;
-					q.add(newCoord);
-					tile.worldObj.markBlockForUpdate(newCoord.x, newCoord.y, newCoord.z);
-					if(!world.isRemote)
-						tiles.add(new Place(this.world, newCoord));
-
-				}
-
-			}
-		}
-		activated = true;
-
-	}
-
 	public void deactivate() {System.out.println("deactivating");
-		World world = DimensionManager.getWorld(this.world);
 	
-		activated = false;
 		inventories.clear();
-		List<TileWormholeTube> tubeList = new ArrayList<TileWormholeTube>();
-		for (Coord coord : tiles) {
-			TileEntity tile = world.getBlockTileEntity(coord.x, coord.y, coord.z);
-			if(tile != null && tile instanceof TileNetwork) {
-				((TileNetwork) tile).activated = false;
-				if(tile instanceof TileWormholeTube)
-					tubeList.add((TileWormholeTube)tile);
-			}
-			world.markBlockForUpdate(coord.x, coord.y, coord.z);
+		for (Spot spot : tiles) {
+			Place place = spot.toPlace();
+			TileWormhole tile = (TileWormhole) TileManager.getTile(place, TileWormhole.class, true);
+			if(tile == null)
+				continue;
+			tile.color = 0;
+			place.world.markBlockForUpdate(place.x, place.y, place.z);
 		}
 		tiles.clear();
-		for(TileWormholeTube tile : tubeList) {
-			tile.updateConnections();
-		}
-	}
-
-
-	public void toggle() {
-		if (activated)
-			deactivate();
-		else
-			activate();
 	}
 
 
 
-	public void validate(int x, int y, int z) {
-		World world = DimensionManager.getWorld(this.world);
-		for (Coord coord : tiles) {
-			if (coord.distance2(x, y, z) > 1)
-				continue;
-			TileEntity tile = world.getBlockTileEntity(coord.x, coord.y,
-					coord.z);
-			if (tile == null || !(tile instanceof TileNetwork)) {
-				deactivate();
-				return;
-			}
-		}
 
-		for (NetworkedInventory inv : inventories) {
-			if (inv.distance2(x, y, z) > 1)
-				continue;
-			TileEntity tile = world.getBlockTileEntity(inv.x, inv.y, inv.z);
-			if (tile == null || !(tile instanceof IInventory)) {
-				deactivate();
-				return;
+
+	public void update(Place place) {
+		World world = place.world;
+		for(ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS) {
+			Place p = place.move(dir);
+			TileEntity tile = TileManager.getTile(place.move(dir), true);
+			if(tile == null) {
+				inventories.remove(place.toSpot());
 			}
 		}
 	}
@@ -181,47 +136,43 @@ public class WormholeNetwork {
 
 
 	public void readFromNBT(NBTTagCompound tag) {
-		id = tag.getInteger("netID");
-		world = tag.getInteger("netWorld");
-		x = tag.getInteger("netX");
-		y = tag.getInteger("netY");
-		z = tag.getInteger("netZ");
+		int world = tag.getInteger("netWorld");
+		int x = tag.getInteger("netX");
+		int y = tag.getInteger("netY");
+		int z = tag.getInteger("netZ");
+		base = new Spot(world, x, y ,z);
+		NBTTagList tagList = tag.getTagList("tiles");
+		int size = tagList.tagCount();
+		for(int i=0;i<size;i++) {
+			NBTTagCompound tagCompound = (NBTTagCompound) tagList.tagAt(i);
+			world = tagCompound.getInteger("world");
+			x = tagCompound.getInteger("x");
+			y = tagCompound.getInteger("y");
+			z = tagCompound.getInteger("z");
+			tiles.add(new Spot(world, x, y, z));
+		}
 	}
 
 	public void writeToNBT(NBTTagCompound tag) {
-		tag.setInteger("netID", id);
-		tag.setInteger("netWorld", world);
-		tag.setInteger("netX", x);
-		tag.setInteger("netY", y);
-		tag.setInteger("netZ", z);
-		
+		tag.setInteger("netWorld", base.world);
+		tag.setInteger("netX", base.x);
+		tag.setInteger("netY", base.y);
+		tag.setInteger("netZ", base.z);
+		NBTTagList tagList = new NBTTagList();
+		for(Spot tile : tiles) {
+			NBTTagCompound tagCompound = new NBTTagCompound();
+			tagCompound.setInteger("world", tile.world);
+			tagCompound.setInteger("x", tile.x);
+			tagCompound.setInteger("y", tile.y);
+			tagCompound.setInteger("z", tile.z);
+			tagList.appendTag(tagCompound);
+		}
+		tag.setTag("tiles", tagList);
 	}
 
-	public void write(DataOutputStream stream) throws IOException {
-		stream.writeInt(this.id);
-		stream.writeInt(this.world);
-		stream.writeInt(this.x);
-		stream.writeInt(this.y);
-		stream.writeInt(this.z);
-		stream.writeInt(tiles.size());
-		for(Place p : tiles) {
-			stream.writeInt(p.world);
-			stream.writeInt(p.x);
-			stream.writeInt(p.y);
-			stream.writeInt(p.z);
-			System.out.println("Saving tile: ("+ p.world+ ", "+p.x+ ", "+p.y+ ", "+p.z+ ")");
-			
-		}
-		stream.writeInt(inventories.size());
-		for(Place p : inventories) {
-			stream.writeInt(p.world);
-			stream.writeInt(p.x);
-			stream.writeInt(p.y);
-			stream.writeInt(p.z);
-			System.out.println("Saving inventory: ("+ p.world+ ", "+p.x+ ", "+p.y+ ", "+p.z+ ")");
-		}
-		
-	}
+	
+
+
 
 
 }

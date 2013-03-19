@@ -15,8 +15,8 @@ public class WormholeTubeRenderer implements ISimpleBlockRenderingHandler{
 	@Override
 	public void renderInventoryBlock(Block block, int metadata, int modelID, RenderBlocks renderer) {
 		int x=0, y=0, z=0;
-		Icon icon1 = ((BlockWormholeTube)block).icons[0];
-		Icon icon2 = ((BlockWormholeTube)block).icons[3];
+		Icon icon1 = ((BlockWormhole)block).icons[0];
+		Icon icon2 = ((BlockWormhole)block).icons[3];
 		Tessellator tes = Tessellator.instance;
 		renderer.setRenderBounds(block.getBlockBoundsMinX(),0,block.getBlockBoundsMinZ(),block.getBlockBoundsMaxX(),1,block.getBlockBoundsMaxZ());
         tes.startDrawingQuads();

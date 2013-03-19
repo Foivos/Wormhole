@@ -5,7 +5,6 @@ import java.util.Random;
 
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.ISidedInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -13,13 +12,10 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.network.INetworkManager;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.Packet132TileEntityData;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraftforge.common.ForgeDirection;
 
 import com.foivos.wormhole.Wormhole;
-import com.foivos.wormhole.networking.TileNetwork;
 
-public class TileWormholeManipulator extends TileNetwork implements ISidedInventory {
+public class TileWormholeManipulator extends TileWormhole implements ISidedInventory {
 	
 	public final static int SIZE = 21;
 	private ItemStack[][] inv = new ItemStack[6][];
@@ -131,20 +127,6 @@ public class TileWormholeManipulator extends TileNetwork implements ISidedInvent
 	}
 	
 	@Override
-	public Packet getDescriptionPacket ()
-	{
-	    NBTTagCompound tag = new NBTTagCompound();
-	    writeToNBT(tag);
-	    return new Packet132TileEntityData(xCoord, yCoord, zCoord, 1, tag);
-	}
-	
-	@Override
-	public void onDataPacket (INetworkManager net, Packet132TileEntityData packet)
-	{
-	    readFromNBT(packet.customParam1);
-	}
-	
-	@Override
     public void readFromNBT(NBTTagCompound tagCompound) {
             super.readFromNBT(tagCompound);
             
@@ -161,10 +143,7 @@ public class TileWormholeManipulator extends TileNetwork implements ISidedInvent
             super.writeToNBT(tagCompound);
             
             NBTTagList itemList = new NBTTagList();
-            
-            
             for (int i=0;i<6*SIZE;i++) {
-            	
         		ItemStack stack = inv[i/SIZE][i%SIZE];
         		if (stack != null) {
                     NBTTagCompound tag = new NBTTagCompound();

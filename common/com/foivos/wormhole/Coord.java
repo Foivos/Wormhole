@@ -4,7 +4,7 @@ import net.minecraftforge.common.ForgeDirection;
 import net.minecraftforge.common.ForgeDummyContainer;
 
 public class Coord implements Comparable<Coord>{
-	public int x,y,z;
+	public final int x,y,z;
 
 	public Coord(int x, int y, int z) {
 		this.x = x;
