@@ -11,6 +11,8 @@ import net.minecraft.world.World;
 
 import com.foivos.wormhole.Place;
 import com.foivos.wormhole.TileManager;
+import com.foivos.wormhole.networking.NetworkManager;
+import com.foivos.wormhole.networking.WormholeNetwork;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -64,12 +66,12 @@ public class BlockWormhole extends BlockContainer
 	public void onNeighborBlockChange(World world, int x, int y, int z, int id) {
 		super.onNeighborBlockChange(world, x, y, z, id);
 		TileWormhole tile = (TileWormhole) TileManager.getTile(world, x, y, z, TileWormhole.class, true);
-		if(tile == null || tile.color == 0)
+		if(tile == null || tile.color == 0 || tile.base == null)
 			return;
-		TileWormhole baseTile = (TileWormhole) TileManager.getTile(world, x, y, z, TileWormhole.class, false);
-		if(baseTile == null || baseTile.network == null)
-			return;
-		baseTile.network.update(new Place(world, x, y, z));
+
+		WormholeNetwork network = NetworkManager.getNetwork(tile.base);
+		if(network != null)
+			network.changed(new Place(world, x, y ,z));
 	}
 	
 	

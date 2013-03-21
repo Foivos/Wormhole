@@ -1,22 +1,23 @@
 package com.foivos.wormhole.networking;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
 import java.util.TreeSet;
 
 import net.minecraft.inventory.IInventory;
-import net.minecraft.nbt.NBTBase;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
+import net.minecraft.inventory.ISidedInventory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
-import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.ForgeDirection;
 
-import com.foivos.wormhole.Coord;
 import com.foivos.wormhole.Place;
 import com.foivos.wormhole.Spot;
 import com.foivos.wormhole.TileManager;
@@ -31,6 +32,7 @@ public class WormholeNetwork {
 
 	public Spot base;
 	public byte color;
+	public long lastUpdate=-1;
 
 	
 	public WormholeNetwork(int world, int x, int y, int z, byte color) {
@@ -47,10 +49,26 @@ public class WormholeNetwork {
 	}
 
 
-	public WormholeNetwork(Spot base, byte color, NBTTagCompound tag) {
-		this.color = color;
+	public WormholeNetwork(Spot base, DataInputStream stream) throws IOException {
 		this.base = base;
-		readFromNBT(tag);
+		this.color = stream.readByte();
+		int tileSize = stream.readInt();
+		for(int i=0;i<tileSize;i++) {
+			int world = stream.readInt();
+			int x = stream.readInt();
+			int y = stream.readInt();
+			int z = stream.readInt();
+			tiles.add(new Spot(world, x, y, z));
+		}
+		int invSize = stream.readInt();
+		for(int i=0;i<invSize;i++) {
+			int world = stream.readInt();
+			int x = stream.readInt();
+			int y = stream.readInt();
+			int z = stream.readInt();
+			byte side = stream.readByte();
+			inventories.add(new NetworkedInventory(world, x, y, z, side));
+		}
 	}
 
 
@@ -66,6 +84,7 @@ public class WormholeNetwork {
 		baseTile.color = this.color;
 		baseTile.base = this.base;
 		tiles.add(base.toSpot());
+		world.getChunkFromBlockCoords(base.x, base.z).isModified=true;
 		world.markBlockForUpdate(base.x, base.y, base.z);
 		Set<Place> explored = new TreeSet<Place>();
 		Queue<Place> toSearch = new LinkedList<Place>();
@@ -89,7 +108,9 @@ public class WormholeNetwork {
 					((TileWormhole)tile).base = this.base;
 					tiles.add(newPlace.toSpot());
 					toSearch.add(newPlace);
+					world.getChunkFromBlockCoords(newPlace.x, newPlace.z).isModified=true;
 					world.markBlockForUpdate(newPlace.x, newPlace.y, newPlace.z);
+					
 					continue;
 				}
 				if(tile instanceof IInventory) {
@@ -104,7 +125,7 @@ public class WormholeNetwork {
 	}
 
 	public void deactivate() {System.out.println("deactivating");
-	
+		
 		inventories.clear();
 		for (Spot spot : tiles) {
 			Place place = spot.toPlace();
@@ -112,63 +133,122 @@ public class WormholeNetwork {
 			if(tile == null)
 				continue;
 			tile.color = 0;
-			place.world.markBlockForUpdate(place.x, place.y, place.z);
+			tile.markForUpdate();
 		}
 		tiles.clear();
+		NetworkManager.removeNetwork(base);
 	}
 
 
 
 
 
-	public void update(Place place) {
+	public void changed(Place place) {
 		World world = place.world;
 		for(ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS) {
 			Place p = place.move(dir);
-			TileEntity tile = TileManager.getTile(place.move(dir), true);
+			TileEntity tile = TileManager.getTile(place.move(dir), IInventory.class, true);
 			if(tile == null) {
 				inventories.remove(place.toSpot());
+				continue;
 			}
+			boolean add = true;
+			for(NetworkedInventory inv : inventories) {
+				if(inv.equals(place.toSpot()) && (dir.ordinal() ^ 1) == inv.side) {
+					add = false;
+					break;
+				}	
+			}
+			if(add)
+				inventories.add(new NetworkedInventory(place.toSpot(), dir.ordinal() ^ 1));
 		}
 	}
 
 
 
 
-	public void readFromNBT(NBTTagCompound tag) {
-		int world = tag.getInteger("netWorld");
-		int x = tag.getInteger("netX");
-		int y = tag.getInteger("netY");
-		int z = tag.getInteger("netZ");
-		base = new Spot(world, x, y ,z);
-		NBTTagList tagList = tag.getTagList("tiles");
-		int size = tagList.tagCount();
-		for(int i=0;i<size;i++) {
-			NBTTagCompound tagCompound = (NBTTagCompound) tagList.tagAt(i);
-			world = tagCompound.getInteger("world");
-			x = tagCompound.getInteger("x");
-			y = tagCompound.getInteger("y");
-			z = tagCompound.getInteger("z");
-			tiles.add(new Spot(world, x, y, z));
-		}
-	}
-
-	public void writeToNBT(NBTTagCompound tag) {
-		tag.setInteger("netWorld", base.world);
-		tag.setInteger("netX", base.x);
-		tag.setInteger("netY", base.y);
-		tag.setInteger("netZ", base.z);
-		NBTTagList tagList = new NBTTagList();
+	public void writeData(DataOutputStream stream) throws IOException {
+		stream.writeByte(color);
+		stream.writeInt(tiles.size());
 		for(Spot tile : tiles) {
-			NBTTagCompound tagCompound = new NBTTagCompound();
-			tagCompound.setInteger("world", tile.world);
-			tagCompound.setInteger("x", tile.x);
-			tagCompound.setInteger("y", tile.y);
-			tagCompound.setInteger("z", tile.z);
-			tagList.appendTag(tagCompound);
+			stream.writeInt(tile.world);
+			stream.writeInt(tile.x);
+			stream.writeInt(tile.y);
+			stream.writeInt(tile.z);
 		}
-		tag.setTag("tiles", tagList);
+		stream.writeInt(inventories.size()); 
+		for(NetworkedInventory inv : inventories) {
+			stream.writeInt(inv.world);
+			stream.writeInt(inv.x);
+			stream.writeInt(inv.y);
+			stream.writeInt(inv.z);
+			stream.writeByte(inv.side);
+		}
+		
 	}
+
+
+	public boolean update() {
+		long time = System.currentTimeMillis();
+		if(time-lastUpdate < 500)
+			return false;
+		lastUpdate = time;
+		List<InventoryData> invData = new ArrayList<InventoryData>();
+		for(NetworkedInventory inv : inventories) {
+			InventoryData data = inv.getData();
+			if(data == null)
+				continue;
+			invData.add(data);
+		}
+		for(InventoryData data : invData) {
+			if(!data.isPulling)
+				continue;
+			for(Entry<Integer, ItemStack> entry : data.pulled.entrySet()) {
+				int index = entry.getKey();
+				ItemStack stack = entry.getValue();
+				outerLoop:
+				for(InventoryData target : invData) {
+					if(target.isPulling(stack))
+						continue;
+					for(int i=target.start; i<target.end; i++) {
+						ItemStack targetStack = target.tile.getStackInSlot(i);
+						if(targetStack == null || !stack.isItemEqual(targetStack))
+							continue;
+						int transaction = Math.min(stack.getMaxStackSize() - stack.stackSize, targetStack.stackSize);
+						targetStack.stackSize -= transaction;
+						stack.stackSize += transaction;
+						if(targetStack.stackSize <= 0){
+							target.tile.setInventorySlotContents(i, null);
+							target.slotChanged(i);
+						}
+						if(stack.stackSize >= stack.getMaxStackSize())
+							break outerLoop;
+							
+					}
+				}
+			}
+			outerLoop:
+			for(InventoryData target : invData) {
+				for(int i=target.start; i<target.end; i++) {
+					if(data.emptySlots.isEmpty())
+						break outerLoop;
+					ItemStack targetStack = target.tile.getStackInSlot(i);
+					if(targetStack == null || target.isPulling(targetStack) || !data.isPulling(targetStack))
+						continue;
+					int index = data.emptySlots.get(data.emptySlots.size() - 1);
+					data.tile.setInventorySlotContents(index, targetStack);
+					data.slotChanged(index);
+					target.tile.setInventorySlotContents(i, null);
+					target.slotChanged(i);
+						
+				}
+			}
+			
+		}
+		return true;
+	}
+
+
 
 	
 

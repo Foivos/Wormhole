@@ -14,11 +14,15 @@ import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.Packet132TileEntityData;
 
 import com.foivos.wormhole.Wormhole;
+import com.foivos.wormhole.networking.ItemSet;
 
 public class TileWormholeManipulator extends TileWormhole implements ISidedInventory {
 	
-	public final static int SIZE = 21;
+	public static final int SIZE = 21;
+	public static final int ITEM_START = 21;
 	private ItemStack[][] inv = new ItemStack[6][];
+	private boolean[] inclGet = new boolean[6];
+	private boolean[] inclPut = new boolean[6];
 	
 	public TileWormholeManipulator() {
 		super();
@@ -136,6 +140,14 @@ public class TileWormholeManipulator extends TileWormhole implements ISidedInven
                     byte b = tag.getByte("Slot");
                     inv[b/SIZE][b%SIZE] = ItemStack.loadItemStackFromNBT(tag);
             }
+            tagList = tagCompound.getTagList("incl");
+            for(int i=0;i < tagList.tagCount() ; i++) {
+            	NBTTagCompound tag = (NBTTagCompound) tagList.tagAt(i);
+            	byte b= tag.getByte("incl");
+            	int side = b>>2;
+            	inclPut[side] = (b & 1) == 1;
+            	inclGet[side] = (b & 2) == 2;
+            }
     }
 
     @Override
@@ -154,6 +166,16 @@ public class TileWormholeManipulator extends TileWormhole implements ISidedInven
             	
             }
             tagCompound.setTag("Inventory", itemList);
+            NBTTagList inclList = new NBTTagList();
+            for(int i=0;i<6;i++) {
+            	if(inclPut[i] || inclGet[i]) {
+            		NBTTagCompound tag = new NBTTagCompound();
+            		byte b = (byte) (((inclPut[i] ? 1 : 0) + (inclGet[i] ? 2 : 0) + (i << 2)) & 31);
+            		tag.setByte("incl", (byte) b);
+            		inclList.appendTag(tag);
+            	}
+            }
+            tagCompound.setTag("incl", inclList);
             
     }
 
@@ -212,6 +234,63 @@ public class TileWormholeManipulator extends TileWormhole implements ISidedInven
 	public int func_94128_d(int i) {
 		return 0;
 	}
+
+	public boolean isPushing(int side, ItemStack stack) {
+		if(stack == null)
+			return false;
+		for(int i=SIZE-9;i<SIZE;i++) {
+			if(inv[side][i] != null && stack.isItemEqual(inv[side][i]))
+				return true;
+		}
+		return false;
+	}
+
+	public void setInclPull(byte i, boolean inclPull) {
+		this.inclPut[i] = inclPull;
+		markForUpdate();
+	}
+	public void setInclPush(byte i, boolean inclPush) {
+		this.inclGet[i] = inclPush;
+		markForUpdate();
+	}
+
+	public void togglePull(byte i) {
+		setInclPull(i, inclPut[i]^true);
+	}
+
+	public void togglePush(byte i) {
+		setInclPush(i, inclGet[i]^true);
+	}
+
+	public boolean getInclPull(byte i) {
+		return inclPut[i];
+	}
+	
+	public boolean getInclPush(byte i) {
+		return inclGet[i];
+	}
+
+	public void writeSets(ItemSet putting, ItemSet getting, int side) {
+		putting.incl = inclPut[side];
+		for(int i=ITEM_START;i<ITEM_START+9;i++) {
+			ItemStack stack = inv[side][i];
+			if(stack != null);
+			putting.items.add(stack);
+		}
+		getting.incl = inclGet[side];
+		for(int i=ITEM_START+9;i<ITEM_START+18;i++) {
+			ItemStack stack = inv[side][i];
+			if(stack != null);
+			getting.items.add(stack);
+		}
+		
+	}
+
+	public boolean isPuller() {
+		// TODO add puller module
+		return false;
+	}
+
 
 
 	

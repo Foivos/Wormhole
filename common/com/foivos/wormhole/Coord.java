@@ -41,4 +41,12 @@ public class Coord implements Comparable<Coord>{
 		int dx = x2 - x, dy = y2 - y, dz = z2 - z;
 		return dx*dx+dy*dy+dz*dz;
 	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if(!(obj instanceof Coord))
+			return false;
+		Coord c = (Coord) obj;
+		return x == c.x && y == c.y && z == c.z;
+	}
 }

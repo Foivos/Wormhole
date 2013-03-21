@@ -6,6 +6,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 
+import com.foivos.wormhole.networking.NetworkManager;
 import com.foivos.wormhole.networking.WormholeNetwork;
 import com.foivos.wormhole.transport.TileWormhole;
 
@@ -26,14 +27,11 @@ public class ItemWormholeActivator extends Item {
 		if (tile == null || !(tile instanceof TileWormhole))
 			return false;
 		if(tile.color == 0 || tile.base == null) {
-			tile.network = new WormholeNetwork(new Spot(world, x, y, z), color);
+			NetworkManager.putNetwork(new Spot(world.getWorldInfo().getDimension(), x, y, z), new WormholeNetwork(new Spot(world, x, y, z), color));
 			color = (byte) ((color+1)%9);
 		}
 		else {
-			TileWormhole baseTile = (TileWormhole) TileManager.getTile(tile.base, true);
-			if(baseTile == null || baseTile.network == null)
-				return false;
-			baseTile.network.deactivate();
+			NetworkManager.deactivate(tile.base);
 		}
 		return true;
 	}

@@ -40,9 +40,16 @@ public class Spot extends Coord {
 	}
 	
 	public int compareTo(Spot o) {
-		// TODO Auto-generated method stub
-		int t = super.compareTo(o);
-		return t == 0 ? world - o.world : t;
+		return world == o.world? super.compareTo(o) : world - o.world;
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if(!(obj instanceof Spot))
+			return false;
+		if(world == ((Spot)obj).world)
+			return super.equals(obj);
+		return false;
 	}
 	
 

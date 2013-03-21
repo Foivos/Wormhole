@@ -19,7 +19,7 @@ import cpw.mods.fml.relauncher.SideOnly;
  */
 public class BlockWormholeManipulator extends BlockWormhole {
 
-	public Icon[] icons = new Icon[12];
+	public Icon[] icons = new Icon[54];
 
 	public BlockWormholeManipulator(int id) {
 		super(id);

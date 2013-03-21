@@ -129,16 +129,28 @@ public class ContainerWormholeManipulator extends Container{
 		if(this.selectedSide == selectedSide)
 			return;
 		this.selectedSide = selectedSide;
-		sendSelectedSideToServer();
 		updateadditionalSlots();
+		sendDataToServer();
+	}
+	
+
+	public void toglePull() {
+		tile.togglePull(selectedSide);
+		sendDataToServer();
+	}
+	
+	public void toglePush() {
+		tile.togglePush(selectedSide);
+		sendDataToServer();
 	}
 
-	private void sendSelectedSideToServer() {
+	private void sendDataToServer() {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream(8);
         DataOutputStream outputStream = new DataOutputStream(bos);
-        try
-        {
+        try {
             outputStream.writeByte(selectedSide);
+            outputStream.writeBoolean(tile.getInclPull(selectedSide));
+            outputStream.writeBoolean(tile.getInclPush(selectedSide));
         }
         catch (Exception ex)
         {
@@ -158,7 +170,6 @@ public class ContainerWormholeManipulator extends Container{
 		
 		public SlotInventoryInterractor(IInventory inv, int slotNumber, int x, int y) {
 			super(inv, slotNumber, x, y);
-			// TODO Auto-generated constructor stub
 		}
 
 		@Override
@@ -201,6 +212,15 @@ public class ContainerWormholeManipulator extends Container{
 		}
 		
 	}
+
+	public boolean getInclPull() {
+		return tile.getInclPull(selectedSide);
+	}
+
+	public boolean getInclPush() {
+		return tile.getInclPush(selectedSide);
+	}
+
 
 
 
