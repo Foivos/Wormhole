@@ -25,6 +25,7 @@ public class TileWormholeTube extends TileWormhole{
 	}
 	
 	public void updateConnections() {
+		connections=0;
 		Place thisPlace = new Place(worldObj, xCoord, yCoord ,zCoord);
 		for(int i=0; i<6; i++) {
 			ForgeDirection dir = ForgeDirection.getOrientation(i);
