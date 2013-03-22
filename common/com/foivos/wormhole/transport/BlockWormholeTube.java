@@ -3,16 +3,18 @@ package com.foivos.wormhole.transport;
 import net.minecraft.client.renderer.texture.IconRegister;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Icon;
+import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 
 import com.foivos.wormhole.CommonProxy;
+import com.foivos.wormhole.TileManager;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
 public class BlockWormholeTube extends BlockWormhole{
 
-	public Icon face;
+	public Icon[] tubeIcons = new Icon[9];
 	
 	public BlockWormholeTube(int id) {
 		super(id);
@@ -26,7 +28,9 @@ public class BlockWormholeTube extends BlockWormhole{
 	@Override
 	@SideOnly(Side.CLIENT)
 	public void func_94332_a(IconRegister register) {
-		face = register.func_94245_a("Wormhole:tubeFace");
+		for(int i=0;i<9;i++) {
+			tubeIcons[i] = register.func_94245_a("Wormhole:tubeFace"+i);
+		}
 		
 		
 	}
@@ -34,13 +38,15 @@ public class BlockWormholeTube extends BlockWormhole{
 	@Override
 	@SideOnly(Side.CLIENT)
 	public Icon getBlockTextureFromSideAndMetadata(int side, int meta) {
-		// TODO Auto-generated method stub
-		return face;
+		return tubeIcons[0];
 	}
 	
-	public Icon getFaceTecture() {
-		return face;
+	@Override
+	public Icon getBlockTexture(IBlockAccess world, int x, int y, int z, int side) {
+		TileWormholeTube tile = (TileWormholeTube) TileManager.getTile(world, x, y, z, TileWormholeTube.class, true);
+		return tubeIcons[tile.color];
 	}
+	
 	
 	public boolean renderAsNormalBlock()
     {
@@ -57,6 +63,23 @@ public class BlockWormholeTube extends BlockWormhole{
         return CommonProxy.WORMHOLE_TUBE_RENDER_ID;
     }
 	
+	@Override
+	public void onNeighborBlockChange(World world, int x, int y, int z, int id) {
+		super.onNeighborBlockChange(world, x, y, z, id);
+		TileWormholeTube tile = (TileWormholeTube) TileManager.getTile(world, x, y, z, TileWormholeTube.class, true);
+		if(tile == null)
+			return;
+		tile.updateConnections();
+	}
+	
+	@Override
+	public void onBlockAdded(World world, int x, int y, int z) {
+		super.onBlockAdded(world, x, y, z);
+		TileWormholeTube tile = (TileWormholeTube) TileManager.getTile(world, x, y, z, TileWormholeTube.class, true);
+		if(tile == null)
+			return;
+		tile.updateConnections();
+	}
 	
 
 }
