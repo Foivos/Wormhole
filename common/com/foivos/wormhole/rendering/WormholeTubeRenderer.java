@@ -28,9 +28,9 @@ public class WormholeTubeRenderer implements ISimpleBlockRenderingHandler{
 		if(!(block instanceof BlockWormholeTube))
 			return false;
 		byte connections = tile.connections;
-		float offset = 0.0625F*3;
+		float offset = 0.0625F*4;
 		renderer.renderAllFaces = true;
-		renderer.setRenderBounds(offset, offset, offset, 1-offset, 1-offset, 1-offset);
+		/*renderer.setRenderBounds(offset, offset, offset, 1-offset, 1-offset, 1-offset);
 		renderer.renderStandardBlock(block, x, y, z);
 		if((connections & 1) != 0) {
 			renderer.setRenderBounds(offset, 0, offset, 1-offset, offset, 1-offset);
@@ -55,7 +55,19 @@ public class WormholeTubeRenderer implements ISimpleBlockRenderingHandler{
 		if((connections & 32) != 0) {
 			renderer.setRenderBounds(1-offset, offset, offset, 1, 1-offset, 1-offset);
 			renderer.renderStandardBlock(block, x, y, z);
-		}
+		}*/
+		renderer.setRenderBounds(offset, 0, 0, offset, 1, 1);
+		renderer.renderStandardBlock(block, x, y, z);
+		renderer.setRenderBounds(1-offset, 0, 0, 1-offset, 1, 1);
+		renderer.renderStandardBlock(block, x, y, z);
+		renderer.setRenderBounds(0,offset, 0, 1, offset, 1);
+		renderer.renderStandardBlock(block, x, y, z);
+		renderer.setRenderBounds(0,1-offset, 0, 1, 1-offset, 1);
+		renderer.renderStandardBlock(block, x, y, z);
+		renderer.setRenderBounds(0, 0, offset, 1, 1, offset);
+		renderer.renderStandardBlock(block, x, y, z);
+		renderer.setRenderBounds(0, 0, 1-offset, 1, 1, 1-offset);
+		renderer.renderStandardBlock(block, x, y, z);
         
         return true;
 	}

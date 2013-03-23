@@ -3,6 +3,7 @@ package com.foivos.wormhole.transport;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.ISidedInventory;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.network.packet.Packet;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.common.ForgeDirection;
 
@@ -34,8 +35,11 @@ public class TileWormholeTube extends TileWormhole{
 			if(tile == null)
 				continue;
 			if(tile instanceof TileWormhole) {
-				if(((TileWormhole)tile).color == color)
+				if(((TileWormhole)tile).color == color) {
 					connections |= 1<<i;
+					if(tile instanceof TileWormholeTube && (((TileWormholeTube)tile).connections & 1<<(i^1)) == 0)
+						((TileWormholeTube)tile).updateConnections();
+				}
 				continue;
 			}
 			if(tile instanceof ISidedInventory) {
@@ -50,5 +54,11 @@ public class TileWormholeTube extends TileWormhole{
 			}
  		}
 		worldObj.markBlockForUpdate(xCoord, yCoord, zCoord);
+	}
+	
+	@Override
+	public Packet getDescriptionPacket() {
+		updateConnections();
+		return super.getDescriptionPacket();
 	}
 }

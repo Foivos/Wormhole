@@ -41,7 +41,6 @@ import cpw.mods.fml.common.registry.LanguageRegistry;
 @NetworkMod(clientSideRequired = true, serverSideRequired = false)
 public class Wormhole {
 
-	public final static Block wormholeStructure = new BlockWormhole(500).setUnlocalizedName("Wormhole:structure");
 	public final static Block wormholeManipulator = new BlockWormholeManipulator(501).setUnlocalizedName("Wormhole:manipulator");
 	public final static Block wormholeTube = new BlockWormholeTube(502).setUnlocalizedName("Wormhole:tube");
 	public final static Item wormholeMatter = new Item(5000).setUnlocalizedName("Wormhole:matter").setCreativeTab(CreativeTabs.tabMisc);
@@ -68,7 +67,6 @@ public class Wormhole {
 	@Init
 	public void load(FMLInitializationEvent event) {
 		proxy.registerRenderers();
-		GameRegistry.registerBlock(wormholeStructure, "wormholeStructure");
 		GameRegistry.registerBlock(wormholeManipulator, "wormholeManipulator");
 		GameRegistry.registerBlock(wormholeTube, "wormholeTube");
 		GameRegistry.registerTileEntity(TileWormhole.class, "tileWormhole");
@@ -77,7 +75,6 @@ public class Wormhole {
 		NetworkRegistry.instance().registerGuiHandler(this, new GuiHandler());
 		NetworkRegistry.instance().registerChannel(packetHandler,"WHmanipulator");
 		NetworkRegistry.instance().registerChannel(packetHandler, "testChannel");
-		LanguageRegistry.addName(wormholeStructure, "Wormhole Structure");
 		LanguageRegistry.addName(wormholeManipulator, "Wormhole Manipulator");
 		LanguageRegistry.addName(wormholeTube, "Wormhole Tube");
 		LanguageRegistry.addName(wormholeEssence, "Wormhole Essence");
@@ -94,13 +91,15 @@ public class Wormhole {
 	private void addRecipes() {
 		GameRegistry.addRecipe(new ItemStack(wormholeMatter), "iei", "bdb", "iei",'i', new ItemStack(Item.ingotIron), 'e', new ItemStack(Item.enderPearl), 'b', Item.blazeRod, 'd',Item.diamond);
 		GameRegistry.addSmelting(wormholeMatter.itemID, new ItemStack(wormholeEssence, 8), 0.2f);
-		GameRegistry.addRecipe(new ItemStack(wormholeStructure, 4), "owo", 'o',Block.obsidian, 'w', wormholeEssence);
+		GameRegistry.addRecipe(new ItemStack(wormholeTube, 4), "owo", 'o',Block.obsidian, 'w', wormholeEssence);
 
 		List<ItemStack> dyeList = new ArrayList<ItemStack>();
-		Item.dyePowder.getSubItems(Item.dyePowder.itemID, null, dyeList);
+		for(int i=0; i<16;i++) {
+			dyeList.add(new ItemStack(Item.dyePowder, 1, i));
+		}
 		for (ItemStack stack1 : dyeList) {
 			for (ItemStack stack2 : dyeList) {
-				GameRegistry.addRecipe(new ItemStack(wormholeManipulator), "oao", "rtr", "obo", 'o', Block.obsidian, 't', wormholeStructure, 'a', stack1, 'b', stack2, 'r', Item.redstone);
+				GameRegistry.addRecipe(new ItemStack(wormholeManipulator), "oao", "rtr", "obo", 'o', Block.obsidian, 't', wormholeTube, 'a', stack1, 'b', stack2, 'r', Item.redstone);
 			}
 		}
 

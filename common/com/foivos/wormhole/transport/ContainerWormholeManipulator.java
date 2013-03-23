@@ -145,6 +145,8 @@ public class ContainerWormholeManipulator extends Container{
 	}
 
 	private void sendDataToServer() {
+		if(!tile.worldObj.isRemote)
+			return;
 		ByteArrayOutputStream bos = new ByteArrayOutputStream(8);
         DataOutputStream outputStream = new DataOutputStream(bos);
         try {
