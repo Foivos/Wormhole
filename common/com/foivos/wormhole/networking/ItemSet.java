@@ -13,9 +13,21 @@ public class ItemSet {
 	}
 	public boolean contains(ItemStack stack) {
 		for(ItemStack stack2 : items) {
-			if(stack2.isItemEqual(stack))
+			if(stack2 != null && stack != null && stack2.isItemEqual(stack))
 				return incl;
 		}
 		return !incl;
+	}
+	
+	public boolean equals(ItemSet set) {
+		if(incl != set.incl)
+			return false;
+		if(items.size() != set.items.size())
+			return false;
+		for(int i=0; i<items.size(); i++) {
+			if(items.get(i) != set.items.get(i))
+				return false;
+		}
+		return true;
 	}
 }

@@ -1,6 +1,7 @@
 package com.foivos.wormhole.transport;
 
 
+import java.util.ArrayList;
 import java.util.Random;
 
 import net.minecraft.entity.item.EntityItem;
@@ -9,9 +10,6 @@ import net.minecraft.inventory.ISidedInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
-import net.minecraft.network.INetworkManager;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.Packet132TileEntityData;
 
 import com.foivos.wormhole.Wormhole;
 import com.foivos.wormhole.networking.ItemSet;
@@ -19,10 +17,10 @@ import com.foivos.wormhole.networking.ItemSet;
 public class TileWormholeManipulator extends TileWormhole implements ISidedInventory {
 	
 	public static final int SIZE = 21;
-	public static final int ITEM_START = 21;
+	public static final int ITEM_START = 3;
 	private ItemStack[][] inv = new ItemStack[6][];
-	private boolean[] inclGet = new boolean[6];
-	private boolean[] inclPut = new boolean[6];
+	private boolean[] inclGet = {true, true, true, true, true, true};
+	private boolean[] inclPut = {true, true, true, true, true, true};
 	
 	public TileWormholeManipulator() {
 		super();
@@ -245,39 +243,41 @@ public class TileWormholeManipulator extends TileWormhole implements ISidedInven
 		return false;
 	}
 
-	public void setInclPull(byte i, boolean inclPull) {
-		this.inclPut[i] = inclPull;
+	public void setInclPut(byte i, boolean inclPut) {
+		this.inclPut[i] = inclPut;
 		markForUpdate();
 	}
-	public void setInclPush(byte i, boolean inclPush) {
-		this.inclGet[i] = inclPush;
+	public void setInclGet(byte i, boolean inclGet) {
+		this.inclGet[i] = inclGet;
 		markForUpdate();
 	}
 
-	public void togglePull(byte i) {
-		setInclPull(i, inclPut[i]^true);
+	public void togglePut(byte i) {
+		setInclPut(i, inclPut[i]^true);
 	}
 
-	public void togglePush(byte i) {
-		setInclPush(i, inclGet[i]^true);
+	public void toggleGet(byte i) {
+		setInclGet(i, inclGet[i]^true);
 	}
 
-	public boolean getInclPull(byte i) {
+	public boolean getInclPut(byte i) {
 		return inclPut[i];
 	}
 	
-	public boolean getInclPush(byte i) {
+	public boolean getInclGet(byte i) {
 		return inclGet[i];
 	}
 
 	public void writeSets(ItemSet putting, ItemSet getting, int side) {
 		putting.incl = inclPut[side];
+		putting.items.clear();
 		for(int i=ITEM_START;i<ITEM_START+9;i++) {
 			ItemStack stack = inv[side][i];
 			if(stack != null);
 			putting.items.add(stack);
 		}
 		getting.incl = inclGet[side];
+		getting.items.clear();
 		for(int i=ITEM_START+9;i<ITEM_START+18;i++) {
 			ItemStack stack = inv[side][i];
 			if(stack != null);

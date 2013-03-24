@@ -98,14 +98,14 @@ public class BlockWormholeTube extends BlockWormhole{
         return CommonProxy.WORMHOLE_TUBE_RENDER_ID;
     }
 	
-	/*@Override
+	@Override
 	public void onNeighborBlockChange(World world, int x, int y, int z, int id) {
 		super.onNeighborBlockChange(world, x, y, z, id);
 		TileWormholeTube tile = (TileWormholeTube) TileManager.getTile(world, x, y, z, TileWormholeTube.class, true);
 		if(tile == null)
 			return;
 		tile.updateConnections();
-	}*/
+	}
 	
 	@Override
 	public void onBlockAdded(World world, int x, int y, int z) {

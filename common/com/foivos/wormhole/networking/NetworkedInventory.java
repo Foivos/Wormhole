@@ -1,6 +1,11 @@
 package com.foivos.wormhole.networking;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
 import net.minecraft.inventory.IInventory;
+import net.minecraft.inventory.ISidedInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.World;
@@ -15,6 +20,10 @@ import com.foivos.wormhole.transport.TileWormholeManipulator;
 public class NetworkedInventory extends Spot{
 
 	public int side;
+	public ItemStack[] stacks;
+	public ItemSet putting = new ItemSet(false);
+	public ItemSet getting = new ItemSet(true);
+	public boolean isPulling = false;
 	
 	public NetworkedInventory(Spot spot, int side) {
 		super(spot);
@@ -64,16 +73,62 @@ public class NetworkedInventory extends Spot{
 		}
 		
 	}
-	
-	public InventoryData getData() {
-		IInventory invTile = (IInventory) TileManager.getTile(this, IInventory.class, false);
-		if(invTile == null)
-			return null;
-		TileWormhole wormTile = (TileWormhole) TileManager.getTile(this.move(ForgeDirection.getOrientation(side)), TileWormhole.class, false);
-		if(wormTile == null)
-			return null;
-		return new InventoryData(invTile, wormTile, side);
+
+	public List<Integer> getChangedSlots() {
+		boolean stateChanged = updateState();
+		IInventory tile = (IInventory) TileManager.getTile(this, IInventory.class, false);
+		if(tile == null) {
+			stacks = null;
+			return new ArrayList<Integer>();
+		}
+		List<Integer> result = new ArrayList<Integer>();
+		if(stacks == null || stateChanged) {
+			stacks = new ItemStack[tile.getSizeInventory()];
+			int start = 0, end = tile.getSizeInventory();
+			if(tile instanceof ISidedInventory){
+				start = ((ISidedInventory)tile).func_94127_c(side);
+				end = start + ((ISidedInventory)tile).func_94128_d(side);
+			}
+			for(int i=start; i<end; i++) {
+				stacks[i] = tile.getStackInSlot(i);
+				result.add(i);
+			}
+			return result;
+		}
+		int start = 0, end = tile.getSizeInventory();
+		if(tile instanceof ISidedInventory){
+			start = ((ISidedInventory)tile).func_94127_c(side);
+			end = start + ((ISidedInventory)tile).func_94128_d(side);
+		}
+		for(int i=start; i<end; i++) {
+			if(tile.getStackInSlot(i) != stacks[i])
+				result.add(i);
+			
+		}
+		return result;
 	}
+	
+	private boolean updateState() {
+		TileWormholeManipulator tile = (TileWormholeManipulator) TileManager.getTile(this.move(ForgeDirection.getOrientation(side)), TileWormholeManipulator.class, false);
+		if(tile != null) {
+			tile.writeSets(putting, getting, side^1);
+		}
+		return (!putting.equals(this.putting) || !getting.equals(this.getting) || !isPulling == this.isPulling);
+	}
+
+	public boolean isPulling(ItemStack stack) {
+		return stack!= null && isPulling && putting.contains(stack) && !getting.contains(stack);
+	}
+	public boolean isStoring(ItemStack stack) {
+		return stack!= null && !isPulling && putting.contains(stack) && !getting.contains(stack);
+	}
+	public boolean isBuffering(ItemStack stack) {
+		return stack!= null && putting.contains(stack) && getting.contains(stack);
+	}
+	public boolean isPushing(ItemStack stack) {
+		return stack!= null && !putting.contains(stack) && getting.contains(stack);
+	}
+
 
 
 }

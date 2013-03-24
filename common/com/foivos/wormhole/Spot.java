@@ -52,5 +52,10 @@ public class Spot extends Coord {
 		return false;
 	}
 	
+	@Override
+	public String toString() {
+		return("(" + world + ", " + x + ", "+ y + ", " + z + ")");
+	}
+	
 
 }

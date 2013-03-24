@@ -24,12 +24,12 @@ public class PacketHandler implements IPacketHandler{
 	 
 			try	{
 				byte selected = stream.readByte();
-				boolean inclPull = stream.readBoolean();
-				boolean inclPush = stream.readBoolean();
+				boolean inclPut = stream.readBoolean();
+				boolean inclGet = stream.readBoolean();
 				if(player instanceof EntityPlayer && ((EntityPlayer) player).openContainer instanceof ContainerWormholeManipulator) {
 					((ContainerWormholeManipulator)((EntityPlayer) player).openContainer).setSelectedSide(selected);
-					((ContainerWormholeManipulator)((EntityPlayer) player).openContainer).tile.setInclPull(selected, inclPull);
-					((ContainerWormholeManipulator)((EntityPlayer) player).openContainer).tile.setInclPush(selected, inclPush);
+					((ContainerWormholeManipulator)((EntityPlayer) player).openContainer).tile.setInclPut(selected, inclPut);
+					((ContainerWormholeManipulator)((EntityPlayer) player).openContainer).tile.setInclGet(selected, inclGet);
 				}
 			}
 			catch (IOException e) {

@@ -134,13 +134,13 @@ public class ContainerWormholeManipulator extends Container{
 	}
 	
 
-	public void toglePull() {
-		tile.togglePull(selectedSide);
+	public void togglePut() {
+		tile.togglePut(selectedSide);
 		sendDataToServer();
 	}
 	
-	public void toglePush() {
-		tile.togglePush(selectedSide);
+	public void toggleGet() {
+		tile.toggleGet(selectedSide);
 		sendDataToServer();
 	}
 
@@ -151,8 +151,8 @@ public class ContainerWormholeManipulator extends Container{
         DataOutputStream outputStream = new DataOutputStream(bos);
         try {
             outputStream.writeByte(selectedSide);
-            outputStream.writeBoolean(tile.getInclPull(selectedSide));
-            outputStream.writeBoolean(tile.getInclPush(selectedSide));
+            outputStream.writeBoolean(tile.getInclPut(selectedSide));
+            outputStream.writeBoolean(tile.getInclGet(selectedSide));
         }
         catch (Exception ex)
         {
@@ -215,12 +215,12 @@ public class ContainerWormholeManipulator extends Container{
 		
 	}
 
-	public boolean getInclPull() {
-		return tile.getInclPull(selectedSide);
+	public boolean getInclPut() {
+		return tile.getInclPut(selectedSide);
 	}
 
-	public boolean getInclPush() {
-		return tile.getInclPush(selectedSide);
+	public boolean getInclGet() {
+		return tile.getInclGet(selectedSide);
 	}
 
 

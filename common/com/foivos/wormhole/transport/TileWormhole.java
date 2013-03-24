@@ -73,7 +73,7 @@ public class TileWormhole extends TileEntity{
 	@Override
 	public void updateEntity() {
 		super.updateEntity();
-		if(isBase() && worldObj != null)
+		if(isBase() && worldObj != null && !worldObj.isRemote)
 			NetworkManager.update(base);
 	}
 

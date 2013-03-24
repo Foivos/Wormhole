@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
 import java.util.TreeSet;
@@ -193,58 +192,59 @@ public class WormholeNetwork {
 		if(time-lastUpdate < 500)
 			return false;
 		lastUpdate = time;
-		List<InventoryData> invData = new ArrayList<InventoryData>();
-		for(NetworkedInventory inv : inventories) {
-			InventoryData data = inv.getData();
-			if(data == null)
-				continue;
-			invData.add(data);
+		List<Integer>[] changed = new List[inventories.size()];
+		for(int i=0; i<inventories.size(); i++) {
+			changed[i] = inventories.get(i).getChangedSlots();
 		}
-		for(InventoryData data : invData) {
-			if(!data.isPulling)
+		for(int i=0; i<inventories.size(); i++) {
+			NetworkedInventory inv = inventories.get(i);
+			if(changed[i].size() == 0)
 				continue;
-			for(Entry<Integer, ItemStack> entry : data.pulled.entrySet()) {
-				int index = entry.getKey();
-				ItemStack stack = entry.getValue();
-				outerLoop:
-				for(InventoryData target : invData) {
-					if(target.isPulling(stack))
-						continue;
-					for(int i=target.start; i<target.end; i++) {
-						ItemStack targetStack = target.tile.getStackInSlot(i);
-						if(targetStack == null || !stack.isItemEqual(targetStack))
+			IInventory tile = (IInventory) TileManager.getTile(inv, IInventory.class, true);
+			for(int j : changed[i]) {
+				ItemStack stack = tile.getStackInSlot(j);
+				if(inv.isPushing(stack)) {
+					for(NetworkedInventory target : inventories) {
+						if(target.equals(inv) || (!target.isPulling(stack) && !target.isStoring(stack) && !target.isBuffering(stack)))
 							continue;
-						int transaction = Math.min(stack.getMaxStackSize() - stack.stackSize, targetStack.stackSize);
-						targetStack.stackSize -= transaction;
-						stack.stackSize += transaction;
-						if(targetStack.stackSize <= 0){
-							target.tile.setInventorySlotContents(i, null);
-							target.slotChanged(i);
+						IInventory targetTile = (IInventory) TileManager.getTile(target, IInventory.class, false);
+						if(targetTile == null)
+							continue;
+						int start = 0, end = targetTile.getSizeInventory();
+						if(targetTile instanceof ISidedInventory) {
+							start = ((ISidedInventory)targetTile).func_94127_c(target.side);
+							end = start + ((ISidedInventory)targetTile).func_94128_d(target.side);
 						}
-						if(stack.stackSize >= stack.getMaxStackSize())
-							break outerLoop;
-							
+						for(int k = start; k < end && stack.stackSize > 0; k++) {
+							ItemStack targetStack = targetTile.getStackInSlot(k);
+							if(targetStack == null || !targetStack.isItemEqual(stack))
+								continue;
+							int transaction = Math.min(stack.stackSize, stack.getMaxStackSize() - targetStack.stackSize);
+							stack.stackSize -= transaction;
+							targetStack.stackSize += transaction;
+							break;
+						}
+						if(stack.stackSize <= 0) {
+							tile.setInventorySlotContents(j, null);
+							break;
+						}
+						for(int k = start; k < end && stack.stackSize > 0; k++) {
+							ItemStack targetStack = targetTile.getStackInSlot(k);
+							if(targetStack != null)
+								continue;
+							targetTile.setInventorySlotContents(k, stack.copy());
+							stack.stackSize = 0;
+							break;
+						}
+						if(stack.stackSize <= 0) {
+							tile.setInventorySlotContents(j, null);
+							break;
+						}
 					}
 				}
 			}
-			outerLoop:
-			for(InventoryData target : invData) {
-				for(int i=target.start; i<target.end; i++) {
-					if(data.emptySlots.isEmpty())
-						break outerLoop;
-					ItemStack targetStack = target.tile.getStackInSlot(i);
-					if(targetStack == null || target.isPulling(targetStack) || !data.isPulling(targetStack))
-						continue;
-					int index = data.emptySlots.get(data.emptySlots.size() - 1);
-					data.tile.setInventorySlotContents(index, targetStack);
-					data.slotChanged(index);
-					target.tile.setInventorySlotContents(i, null);
-					target.slotChanged(i);
-						
-				}
-			}
-			
 		}
+		
 		return true;
 	}
 

@@ -44,6 +44,8 @@ public class BlockWormhole extends BlockContainer
 	@Override
 	public void onNeighborBlockChange(World world, int x, int y, int z, int id) {
 		super.onNeighborBlockChange(world, x, y, z, id);
+		if(world.isRemote)
+			return;
 		TileWormhole tile = (TileWormhole) TileManager.getTile(world, x, y, z, TileWormhole.class, true);
 		if(tile == null || tile.color == 0 || tile.base == null)
 			return;

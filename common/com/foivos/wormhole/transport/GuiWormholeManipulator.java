@@ -42,9 +42,9 @@ public class GuiWormholeManipulator extends GuiContainer {
 			this.drawTexturedModalRect(x+7, y+6, 0, 178, 162, 253-178);
 		}
 		else {
-			int offset = ((ContainerWormholeManipulator) inventorySlots).getInclPull() ? 0 : 9;
+			int offset = ((ContainerWormholeManipulator) inventorySlots).getInclPut() ? 0 : 9;
 			this.drawTexturedModalRect(x+63, y+27, 176, 9+offset, 9, 9);
-			offset = ((ContainerWormholeManipulator) inventorySlots).getInclPush() ? 0 : 9;
+			offset = ((ContainerWormholeManipulator) inventorySlots).getInclGet() ? 0 : 9;
 			this.drawTexturedModalRect(x+104, y+27, 176, 9+offset, 9, 9);
 		}
 		byte selectedSide = ((ContainerWormholeManipulator)inventorySlots).getSelectedSide();
@@ -59,10 +59,10 @@ public class GuiWormholeManipulator extends GuiContainer {
 			((ContainerWormholeManipulator) inventorySlots).setSelectedSide((byte) ((x1-61)/9));
 		}
 		else if(x1 >= 63 && x1 <= 71 && y1 >= 27 && y1<=35) {
-			((ContainerWormholeManipulator) inventorySlots).toglePull();
+			((ContainerWormholeManipulator) inventorySlots).togglePut();
 		}
 		else if(x1 >= 104 && x1 <= 112 && y1 >= 27 && y1<=35) {
-			((ContainerWormholeManipulator) inventorySlots).toglePush();
+			((ContainerWormholeManipulator) inventorySlots).toggleGet();
 		}
 		super.mouseClicked(x,y,modifiers);
 	}

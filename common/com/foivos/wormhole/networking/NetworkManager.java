@@ -12,6 +12,7 @@ import java.util.TreeMap;
 
 import net.minecraft.server.MinecraftServer;
 
+import com.foivos.wormhole.Logger;
 import com.foivos.wormhole.Spot;
 
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
@@ -50,14 +51,13 @@ public class NetworkManager {
 				throw new Exception("Unable to locate save file");
 			FileInputStream fin = new FileInputStream(file);
 			DataInputStream stream = new DataInputStream(fin);
-			System.out.print("Reading Wormhole data from "+ file.getCanonicalPath()+"...");
+			Logger.log("Reading Wormhole data from "+ file.getCanonicalPath()+"...");
 			readNetworks(stream);
-			System.out.println(" done");
+			Logger.log(" done");
 			fin.close();
 			
 		} catch(Exception e) {
 			System.out.println("Error while loading Wormhole data");
-			e.printStackTrace();
 		}
 	}
 	
@@ -67,14 +67,13 @@ public class NetworkManager {
 			File file = getSaveFile();
 			FileOutputStream fout = new FileOutputStream(file);
 			DataOutputStream stream = new DataOutputStream(fout);
-			System.out.print("Writing Wormhole data to " + file.getCanonicalPath()+"...");
+			Logger.log("Writing Wormhole data to " + file.getCanonicalPath()+"...");
 			writeNetworks(stream);
-			System.out.println(" done");
+			Logger.log(" done");
 			fout.close();
 		}
 		catch(Exception e) {
 			System.out.println("Error while saving Wormhole data");
-			e.printStackTrace();
 		}
 	}
 		
@@ -145,6 +144,7 @@ public class NetworkManager {
 			int y = stream.readInt();
 			int z = stream.readInt();
 			Spot base = new Spot(world, x, y, z);
+			Logger.log("Reading data for network "+base);
 			networks.put(base, new WormholeNetwork(base, stream));
 		}
 	}
@@ -153,6 +153,7 @@ public class NetworkManager {
 		stream.writeInt(networks.size());
 		for(Entry<Spot,WormholeNetwork> entry : networks.entrySet()) {
 			Spot base = entry.getKey();
+			Logger.log("Writing data for network "+base);
 			stream.writeInt(base.world);
 			stream.writeInt(base.x);
 			stream.writeInt(base.y);
