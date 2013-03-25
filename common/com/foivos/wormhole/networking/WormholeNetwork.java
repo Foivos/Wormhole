@@ -265,7 +265,7 @@ public class WormholeNetwork {
 					continue;
 				ItemStack leftover = transaction.target.put(stack);
 				if(leftover.stackSize <= 0)
-					inv.getTile().setInventorySlotContents(transaction.slot, null);
+					transaction.origin.getTile().setInventorySlotContents(transaction.slot, null);
 				continue;
 			}
 			if(transaction.weight < 0) {
