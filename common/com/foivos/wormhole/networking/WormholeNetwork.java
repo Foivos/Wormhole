@@ -6,8 +6,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.TreeSet;
 
 import net.minecraft.inventory.IInventory;
@@ -17,6 +19,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 import net.minecraftforge.common.ForgeDirection;
 
+import com.foivos.wormhole.Coord;
 import com.foivos.wormhole.Place;
 import com.foivos.wormhole.Spot;
 import com.foivos.wormhole.TileManager;
@@ -66,7 +69,7 @@ public class WormholeNetwork {
 			int y = stream.readInt();
 			int z = stream.readInt();
 			byte side = stream.readByte();
-			inventories.add(new NetworkedInventory(world, x, y, z, side));
+			addInventory(new NetworkedInventory(world, x, y, z, side));
 		}
 	}
 
@@ -148,22 +151,57 @@ public class WormholeNetwork {
 			Place p = place.move(dir);
 			TileEntity tile = TileManager.getTile(place.move(dir), IInventory.class, true);
 			if(tile == null) {
-				inventories.remove(place.toSpot());
+				inventories.remove(new NetworkedInventory(place.toSpot(), dir.ordinal() ^ 1));
 				continue;
 			}
-			boolean add = true;
-			for(NetworkedInventory inv : inventories) {
-				if(inv.equals(place.toSpot()) && (dir.ordinal() ^ 1) == inv.side) {
-					add = false;
-					break;
-				}	
-			}
-			if(add)
-				inventories.add(new NetworkedInventory(place.toSpot(), dir.ordinal() ^ 1));
+			NetworkedInventory inv = new NetworkedInventory(p.toSpot(), dir.ordinal() ^1);
+			if(!inventories.contains(inv))
+				addInventory(inv);
+				
 		}
 	}
 
 
+
+
+	private void addInventory(NetworkedInventory inv) {
+		Set<Spot> tileSet = new TreeSet(tiles);
+		
+		
+		Set<Spot> explored = new TreeSet<Spot>();
+		Queue<DistSpot> toSearch = new LinkedList<DistSpot>();
+		DistSpot distInv = new DistSpot(inv);
+		distInv.distance = 0;
+		explored.add(inv);
+		toSearch.add(distInv);
+		DistSpot spot;
+		while((spot = toSearch.poll()) != null) {
+			for(ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS) {
+				DistSpot newSpot = spot.move(dir);
+				
+				if(explored.contains(newSpot))
+					continue;
+				explored.add(newSpot);
+			
+				if(tileSet.contains(newSpot)) {
+					toSearch.add(newSpot);
+					continue;
+				}
+				for(NetworkedInventory target : inventories) {
+					if(newSpot.equals(target) && (dir.ordinal() ^ 1) == target.side){
+						inv.distances.put(target, newSpot.distance);
+						target.distances.put(inv, newSpot.distance);
+						break;
+					}
+				}
+				
+				
+			}
+			
+		}
+		inventories.add(inv);
+		
+	}
 
 
 	public void writeData(DataOutputStream stream) throws IOException {
@@ -196,60 +234,79 @@ public class WormholeNetwork {
 		for(int i=0; i<inventories.size(); i++) {
 			changed[i] = inventories.get(i).getChangedSlots();
 		}
+		
+		PriorityQueue<Transaction> transactions = new PriorityQueue<Transaction>();
 		for(int i=0; i<inventories.size(); i++) {
 			NetworkedInventory inv = inventories.get(i);
 			if(changed[i].size() == 0)
 				continue;
-			IInventory tile = (IInventory) TileManager.getTile(inv, IInventory.class, true);
+			IInventory tile = inv.getTile();
 			for(int j : changed[i]) {
 				ItemStack stack = tile.getStackInSlot(j);
-				if(inv.isPushing(stack)) {
-					for(NetworkedInventory target : inventories) {
-						if(target.equals(inv) || (!target.isPulling(stack) && !target.isStoring(stack) && !target.isBuffering(stack)))
-							continue;
-						IInventory targetTile = (IInventory) TileManager.getTile(target, IInventory.class, false);
-						if(targetTile == null)
-							continue;
-						int start = 0, end = targetTile.getSizeInventory();
-						if(targetTile instanceof ISidedInventory) {
-							start = ((ISidedInventory)targetTile).func_94127_c(target.side);
-							end = start + ((ISidedInventory)targetTile).func_94128_d(target.side);
-						}
-						for(int k = start; k < end && stack.stackSize > 0; k++) {
-							ItemStack targetStack = targetTile.getStackInSlot(k);
-							if(targetStack == null || !targetStack.isItemEqual(stack))
-								continue;
-							int transaction = Math.min(stack.stackSize, stack.getMaxStackSize() - targetStack.stackSize);
-							stack.stackSize -= transaction;
-							targetStack.stackSize += transaction;
-							break;
-						}
-						if(stack.stackSize <= 0) {
-							tile.setInventorySlotContents(j, null);
-							break;
-						}
-						for(int k = start; k < end && stack.stackSize > 0; k++) {
-							ItemStack targetStack = targetTile.getStackInSlot(k);
-							if(targetStack != null)
-								continue;
-							targetTile.setInventorySlotContents(k, stack.copy());
-							stack.stackSize = 0;
-							break;
-						}
-						if(stack.stackSize <= 0) {
-							tile.setInventorySlotContents(j, null);
-							break;
-						}
+				for(NetworkedInventory target : inventories) {
+					if(stack == null) {
+						Transaction transaction = new Transaction(inv, target, j, 0, inv.getDistance(target));
+						transactions.add(transaction);
+						continue;
+					}
+					int result = Utils.whoWants(inv, target, stack);
+					if(result != 0) {
+						Transaction transaction = new Transaction(inv, target, j, result, inv.getDistance(target));
+						transactions.add(transaction);
 					}
 				}
 			}
 		}
+		Transaction transaction;
+		while((transaction = transactions.poll()) != null) {
+			if(transaction.weight > 0) {
+				ItemStack stack = transaction.origin.getStack(transaction.slot);
+				if(stack == null)
+					continue;
+				ItemStack leftover = transaction.target.put(stack);
+				if(leftover.stackSize <= 0)
+					inv.getTile().setInventorySlotContents(transaction.slot, null);
+				continue;
+			}
+			if(transaction.weight < 0) {
+				ItemStack stack = transaction.origin.getStack(transaction.slot);
+				if(stack == null || stack.stackSize >= stack.getMaxStackSize())
+					continue;
+				List<Integer> slots = transaction.target.findStacks(stack);
+				for(int slot : slots) {
+					if(stack.stackSize >= stack.getMaxStackSize())
+						break;
+					ItemStack targetStack = transaction.target.getStack(slot);
+					targetStack = transaction.origin.put(targetStack);
+					if(targetStack.stackSize <= 0);
+					transaction.target.getTile().setInventorySlotContents(slot, null);
+				}
+				continue;
+			}
+								
+			
+		}
+		
 		
 		return true;
 	}
 
 
+	private class DistSpot extends Spot { 
+		public DistSpot(Spot spot) {
+			super(spot);
+		}
+		
+		@Override
+		public DistSpot move(ForgeDirection dir) {
+			DistSpot result = new DistSpot(super.move(dir));
+			result.distance = this.distance + 1;
+			return result;
+			
+		}
 
+		public int distance;
+	}
 	
 
 

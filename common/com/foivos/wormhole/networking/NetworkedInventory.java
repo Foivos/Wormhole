@@ -1,8 +1,14 @@
 package com.foivos.wormhole.networking;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import javax.swing.text.html.HTMLDocument.HTMLReader.IsindexAction;
+
+import org.bouncycastle.asn1.isismtt.ISISMTTObjectIdentifiers;
 
 import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.ISidedInventory;
@@ -14,7 +20,6 @@ import net.minecraftforge.common.ForgeDirection;
 import com.foivos.wormhole.Coord;
 import com.foivos.wormhole.Spot;
 import com.foivos.wormhole.TileManager;
-import com.foivos.wormhole.transport.TileWormhole;
 import com.foivos.wormhole.transport.TileWormholeManipulator;
 
 public class NetworkedInventory extends Spot{
@@ -24,6 +29,10 @@ public class NetworkedInventory extends Spot{
 	public ItemSet putting = new ItemSet(false);
 	public ItemSet getting = new ItemSet(true);
 	public boolean isPulling = false;
+	
+	WeakReference<IInventory> tile;
+	
+	public Map<NetworkedInventory, Integer> distances = new HashMap<NetworkedInventory, Integer>();
 	
 	public NetworkedInventory(Spot spot, int side) {
 		super(spot);
@@ -43,8 +52,23 @@ public class NetworkedInventory extends Spot{
 		return world.checkChunksExist(x, y, z, x, y, z);
 	}
 
-	public ItemStack put(ItemStack stack, int i) {
-		IInventory invTile = (IInventory) TileManager.getTile(this, IInventory.class, false);
+	public ItemStack put(ItemStack stack) {
+		IInventory tile = getTile();
+		if(tile == null)
+			return null;
+		int start = 0, end = tile.getSizeInventory();
+		if(tile instanceof ISidedInventory) {
+			start = ((ISidedInventory)tile).func_94127_c(side);
+			end = start + ((ISidedInventory)tile).func_94128_d(side);
+		}
+		for(int i=start; i<end && stack.stackSize>0; i++) {
+			putStackInSlot(stack, i);
+		}
+		return stack;
+	}
+	
+	public ItemStack putStackInSlot(ItemStack stack, int i) {
+		IInventory invTile = getTile();
 		if(invTile == null)
 			return stack;
 		ItemStack slotStack = invTile.getStackInSlot(i);
@@ -63,7 +87,7 @@ public class NetworkedInventory extends Spot{
 	}
 
 	public void cleanup() {
-		IInventory invTile = (IInventory) TileManager.getTile(this, IInventory.class, false);
+		IInventory invTile = getTile();
 		if(invTile == null)
 			return;
 		for(int i=0;i<invTile.getSizeInventory();i++) {
@@ -76,7 +100,7 @@ public class NetworkedInventory extends Spot{
 
 	public List<Integer> getChangedSlots() {
 		boolean stateChanged = updateState();
-		IInventory tile = (IInventory) TileManager.getTile(this, IInventory.class, false);
+		IInventory tile = getTile();
 		if(tile == null) {
 			stacks = null;
 			return new ArrayList<Integer>();
@@ -116,19 +140,75 @@ public class NetworkedInventory extends Spot{
 		return (!putting.equals(this.putting) || !getting.equals(this.getting) || !isPulling == this.isPulling);
 	}
 
+	public boolean isGetting(ItemStack stack) {
+		return getting.contains(stack);
+	}
+	
+	public boolean isPutting(ItemStack stack) {
+		return putting.contains(stack);
+	}
+
 	public boolean isPulling(ItemStack stack) {
-		return stack!= null && isPulling && putting.contains(stack) && !getting.contains(stack);
+		return isPutting(stack) && isPulling;
 	}
-	public boolean isStoring(ItemStack stack) {
-		return stack!= null && !isPulling && putting.contains(stack) && !getting.contains(stack);
+	/**
+	 * Returns how much the inventory wants that Item, from 0 to 5;
+	 * @param stack
+	 * @return
+	 */
+	public int getLevel(ItemStack stack) {
+		if(!isPutting(stack) && !isGetting(stack))
+			return 0;
+		if(!isPutting(stack) && isGetting(stack))
+			return 1;
+		return 2 + (isGetting(stack) ? 0 : 2) + (isPulling ? 1 : 0);
 	}
-	public boolean isBuffering(ItemStack stack) {
-		return stack!= null && putting.contains(stack) && getting.contains(stack);
-	}
-	public boolean isPushing(ItemStack stack) {
-		return stack!= null && !putting.contains(stack) && getting.contains(stack);
+	
+	public IInventory getTile() {
+		if(tile == null || tile.get() == null) {
+			IInventory invTile = (IInventory) TileManager.getTile(this, IInventory.class, false);
+			tile = new WeakReference<IInventory>(invTile);
+		}
+		return tile.get();
 	}
 
+	public int getDistance(NetworkedInventory target) {
+		return distances.get(target);
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if(!(obj instanceof NetworkedInventory))
+			return false;
+		return super.equals(obj) && ((NetworkedInventory)obj).side == side;		
+	}
 
+	public ItemStack getStack(int slot) {
+		IInventory tile = getTile();
+		if(tile == null)
+			return null;
+		return tile.getStackInSlot(slot);
+	}
+
+	public List<Integer> findStacks(ItemStack stack) {
+		IInventory tile = getTile();
+		if(tile == null)
+			return null;
+		List<Integer> result = new ArrayList<Integer>();
+		
+		int start = 0, end = tile.getSizeInventory();
+		if(tile instanceof ISidedInventory) {
+			start = ((ISidedInventory)tile).func_94127_c(side);
+			end = start + ((ISidedInventory)tile).func_94128_d(side);
+		}
+		for(int i=start; i<end && stack.stackSize>0; i++) {
+			ItemStack targetStack = tile.getStackInSlot(i);
+			if(targetStack == null)
+				continue;
+			if(targetStack.isItemEqual(stack))
+				result.add(i);
+		}
+		return result;
+	}
 
 }
